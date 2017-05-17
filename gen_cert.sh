@@ -4,10 +4,10 @@ CERTS_DIR="certs"
 CSR_COUNTRY="DE"
 CSR_STATE="Berlin"
 CSR_LOCALITY="Berlin"
-CSR_ORGANISATION="My Company GmbH"
-CSR_COMMON="company.com"
+CSR_ORGANISATION="Wire Swiss GmbH"
+CSR_COMMON="wire.com"
 CSR_NAME="myservercert"
-KEYSTORE_PASSWORD="W0rd5DontCome3asy2Me"
+KEYSTORE_PASSWORD=""
 KEYSTORE_FILE="keystore.jks"
 
 mkdir -p $CERTS_DIR

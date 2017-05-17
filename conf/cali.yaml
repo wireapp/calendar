@@ -1,22 +1,16 @@
 server:
   applicationConnectors:
     - type: http
-      port: 8049
+      port: 8080
     - type: https
       port: 443
       keyStorePath: keystore.jks
-      keyStorePassword: your_secret
       certAlias: myservercert
       validateCerts: false
       validatePeers: false
 
   adminConnectors:
     - type: http
-      port: 8051
+      port: 8081
 #  requestLog:
 #    appenders: []
-
-auth: your_auth_token   # obtained from DevBot when running: show bot <name>
-name: Echo
-accent: 2
-cryptoDir: crypto

@@ -16,7 +16,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-package com.wire.bots.echo;
+package com.wire.bots.cali;
 
 import com.codahale.metrics.MetricRegistry;
 import com.waz.model.Messages;
@@ -38,10 +38,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class MessageHandler extends MessageHandlerBase {
-    private final EchoConfig config;
+    private final Config config;
     private final MetricRegistry metrics;
 
-    public MessageHandler(EchoConfig config, Environment env) {
+    public MessageHandler(Config config, Environment env) {
         this.config = config;
         metrics = env.metrics();
     }

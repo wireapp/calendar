@@ -1,9 +1,9 @@
 #!/bin/bash
 
-NAME="echo-knows"
+NAME="cali-knows"
 
-AUTH_TOKEN="your_token"
-KEYSTORE_PASSWORD="your_secret"
+AUTH_TOKEN=""
+KEYSTORE_PASSWORD=""
 
 kubectl delete secret $NAME
 kubectl create secret generic $NAME \
