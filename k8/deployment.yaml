@@ -77,3 +77,6 @@ spec:
     - name: https
       port: 443
       protocol: TCP
+    - name: http
+      port: 80
+      protocol: TCP

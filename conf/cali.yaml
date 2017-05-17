@@ -1,7 +1,7 @@
 server:
   applicationConnectors:
     - type: http
-      port: 8080
+      port: 80
     - type: https
       port: 443
       keyStorePath: keystore.jks
@@ -12,5 +12,5 @@ server:
   adminConnectors:
     - type: http
       port: 8081
-#  requestLog:
-#    appenders: []
+  #requestLog:
+   #  appenders: []

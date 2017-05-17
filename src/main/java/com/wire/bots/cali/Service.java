@@ -23,12 +23,20 @@ import com.wire.bots.sdk.Server;
 import io.dropwizard.setup.Environment;
 
 public class Service extends Server<Config> {
+    public static Config CONFIG;
+
     public static void main(String[] args) throws Exception {
         new Service().run(args);
     }
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
+        CONFIG = config;
         return new MessageHandler(config, env);
+    }
+
+    @Override
+    protected void onRun(Config config, Environment env) {
+        addResource(new AuthResource(), env);
     }
 }
