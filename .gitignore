@@ -2,5 +2,4 @@ target/
 certs/
 crypto/
 *.iml
-*.log
-*.lck
+.idea/

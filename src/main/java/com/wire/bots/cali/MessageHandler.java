@@ -22,7 +22,9 @@ import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
+import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.Logger;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
@@ -30,7 +32,25 @@ import com.wire.bots.sdk.assets.Picture;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+
 public class MessageHandler extends MessageHandlerBase {
+    private static final int DELAY = 30;
+    private final ClientRepo repo;
+    private Timer timer = new Timer();
+
+    MessageHandler(ClientRepo repo) {
+        this.repo = repo;
+        for (WireClient client : getClients()) {
+            scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
+        }
+    }
+
     @Override
     public void onNewConversation(WireClient client) {
         try {
@@ -39,10 +59,50 @@ public class MessageHandler extends MessageHandlerBase {
             Picture preview = uploadPreview(client,
                     "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
             client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
+
+            scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
         } catch (Exception e) {
             e.printStackTrace();
             Logger.error(e.getMessage());
         }
+    }
+
+    private void scheduleTimer(final WireClient client, final long delay) {
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    String botId = client.getId();
+                    CalendarAPI.getCredential(botId).refreshToken();
+
+                    Calendar service = CalendarAPI.getCalendarService(botId);
+                    long current = System.currentTimeMillis();
+                    DateTime now = new DateTime(System.currentTimeMillis());
+                    Events events = service.events().list("primary")
+                            .setMaxResults(2)
+                            .setTimeMin(now)
+                            .setOrderBy("startTime")
+                            .setSingleEvents(true)
+                            .execute();
+
+                    for (Event event : events.getItems()) {
+                        DateTime start = event.getStart().getDateTime();
+                        long startUTC = start.getValue() - start.getTimeZoneShift();
+                        long in = startUTC - current;
+
+                        if (in > 0 && in < delay) {
+                            String msg = String.format("**%s** in %d minutes\n",
+                                    event.getSummary(),
+                                    TimeUnit.MILLISECONDS.toMinutes(in));
+
+                            client.sendText(msg);
+                        }
+                    }
+                } catch (Exception e) {
+                   // Logger.warning("Periodic timer failed: %s", e.getLocalizedMessage());
+                }
+            }
+        }, TimeUnit.MINUTES.toMillis(1), delay);
     }
 
     @Override
@@ -76,8 +136,9 @@ public class MessageHandler extends MessageHandlerBase {
                 .execute();
         StringBuilder sb = new StringBuilder("Upcoming events:\n");
         for (Event event : events.getItems()) {
-            DateTime start = event.getStart().getDateTime();
-            sb.append(String.format("%s at %s\n", event.getSummary(), start));
+            EventDateTime eventStart = event.getStart();
+            DateTime start = eventStart.getDateTime();
+            sb.append(String.format("**%s** at %s\n", event.getSummary(), start));
         }
         return sb.toString();
     }
@@ -89,5 +150,21 @@ public class MessageHandler extends MessageHandlerBase {
         AssetKey assetKey = client.uploadAsset(preview);
         preview.setAssetKey(assetKey.key);
         return preview;
+    }
+
+    private ArrayList<WireClient> getClients() {
+        final ArrayList<WireClient> ret = new ArrayList<>();
+        File dir = new File(repo.getPath());
+        File[] files = dir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                String botId = file.getName();
+                WireClient wireClient = repo.getWireClient(botId);
+                if (wireClient != null)
+                    ret.add(wireClient);
+                return wireClient != null;
+            }
+        });
+        return ret;
     }
 }

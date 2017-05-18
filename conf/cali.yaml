@@ -12,5 +12,5 @@ server:
   adminConnectors:
     - type: http
       port: 8081
-  #requestLog:
-   #  appenders: []
+  requestLog:
+      appenders: []
