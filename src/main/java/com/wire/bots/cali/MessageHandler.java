@@ -26,48 +26,8 @@ import com.wire.bots.sdk.Logger;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.models.TextMessage;
-import io.dropwizard.setup.Environment;
-
-import java.util.List;
 
 public class MessageHandler extends MessageHandlerBase {
-    private final Config config;
-
-    public MessageHandler(Config config, Environment env) {
-        this.config = config;
-    }
-
-    @Override
-    public void onText(WireClient client, TextMessage msg) {
-        try {
-            Calendar service = CalendarAPI.getCalendarService("user");
-
-            DateTime now = new DateTime(System.currentTimeMillis());
-            Events events = service.events().list("primary")
-                    .setMaxResults(10)
-                    .setTimeMin(now)
-                    .setOrderBy("startTime")
-                    .setSingleEvents(true)
-                    .execute();
-            List<Event> items = events.getItems();
-            if (items.size() == 0) {
-                client.sendText("No upcoming events found.");
-            } else {
-                StringBuilder sb = new StringBuilder("Upcoming events\n");
-                for (Event event : items) {
-                    DateTime start = event.getStart().getDateTime();
-                    if (start == null) {
-                        start = event.getStart().getDate();
-                    }
-                    sb.append(String.format("%s (%s)\n", event.getSummary(), start));
-                }
-                client.sendText(sb.toString());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void onNewConversation(WireClient client) {
         try {
@@ -79,4 +39,35 @@ public class MessageHandler extends MessageHandlerBase {
         }
     }
 
+    @Override
+    public void onText(WireClient client, TextMessage msg) {
+        try {
+            if (msg.getText().equalsIgnoreCase("/auth")) {
+                String authUrl = CalendarAPI.getAuthUrl(client.getId());
+                client.sendText(authUrl);
+            } else if (msg.getText().equalsIgnoreCase("/list")) {
+                Calendar service = CalendarAPI.getCalendarService(client.getId());
+                String text = listEvents(service);
+                client.sendText(text);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String listEvents(Calendar service) throws java.io.IOException {
+        DateTime now = new DateTime(System.currentTimeMillis());
+        Events events = service.events().list("primary")
+                .setMaxResults(5)
+                .setTimeMin(now)
+                .setOrderBy("startTime")
+                .setSingleEvents(true)
+                .execute();
+        StringBuilder sb = new StringBuilder("Upcoming events:\n");
+        for (Event event : events.getItems()) {
+            DateTime start = event.getStart().getDateTime();
+            sb.append(String.format("%s at %s\n", event.getSummary(), start));
+        }
+        return sb.toString();
+    }
 }

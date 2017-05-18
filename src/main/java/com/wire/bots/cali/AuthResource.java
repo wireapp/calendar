@@ -11,7 +11,7 @@ import javax.ws.rs.core.Response;
 public class AuthResource {
 
     @GET
-    public Response auth(@QueryParam("bot") String bot,
+    public Response auth(@QueryParam("state") String bot,
                          @QueryParam("code") String code) throws Exception {
 
         Logger.info("AuthResource: Bot: %s, code: %s",
@@ -25,5 +25,4 @@ public class AuthResource {
                 status(200).
                 build();
     }
-
 }

@@ -32,7 +32,7 @@ public class Service extends Server<Config> {
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
         CONFIG = config;
-        return new MessageHandler(config, env);
+        return new MessageHandler();
     }
 
     @Override
