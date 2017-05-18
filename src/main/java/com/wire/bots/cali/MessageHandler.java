@@ -18,6 +18,7 @@
 
 package com.wire.bots.cali;
 
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
@@ -25,6 +26,8 @@ import com.google.api.services.calendar.model.Events;
 import com.wire.bots.sdk.Logger;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
+import com.wire.bots.sdk.assets.Picture;
+import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 
 public class MessageHandler extends MessageHandlerBase {
@@ -32,7 +35,10 @@ public class MessageHandler extends MessageHandlerBase {
     public void onNewConversation(WireClient client) {
         try {
             String authUrl = CalendarAPI.getAuthUrl(client.getId());
-            client.sendText(authUrl);
+
+            Picture preview = uploadPreview(client,
+                    "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
+            client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
         } catch (Exception e) {
             e.printStackTrace();
             Logger.error(e.getMessage());
@@ -47,8 +53,13 @@ public class MessageHandler extends MessageHandlerBase {
                 client.sendText(authUrl);
             } else if (msg.getText().equalsIgnoreCase("/list")) {
                 Calendar service = CalendarAPI.getCalendarService(client.getId());
-                String text = listEvents(service);
-                client.sendText(text);
+                try {
+                    String text = listEvents(service);
+                    client.sendText(text);
+                } catch (GoogleJsonResponseException ex) {
+                    client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
+                            "to your Google account");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -69,5 +80,14 @@ public class MessageHandler extends MessageHandlerBase {
             sb.append(String.format("%s at %s\n", event.getSummary(), start));
         }
         return sb.toString();
+    }
+
+    private Picture uploadPreview(WireClient client, String imgUrl) throws Exception {
+        Picture preview = new Picture(imgUrl);
+        preview.setPublic(true);
+
+        AssetKey assetKey = client.uploadAsset(preview);
+        preview.setAssetKey(assetKey.key);
+        return preview;
     }
 }
