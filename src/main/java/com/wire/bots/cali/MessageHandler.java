@@ -34,25 +34,73 @@ import com.wire.bots.sdk.models.TextMessage;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends MessageHandlerBase {
+    private static final int REMIND_IN = 15;
+    private static final int PERIOD = 15;
+
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
     private final Timer timer = new Timer();
+    private final HashMap<String, Event> remindersMap = new HashMap<>();
 
-    private static final int DELAY = 15;
     private final ClientRepo repo;
 
     MessageHandler(ClientRepo repo) {
         this.repo = repo;
-        for (WireClient client : getClients()) {
-            scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
+
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                for (WireClient client : getClients()) {
+                    fetchEvents(client, 3);
+                }
+            }
+        }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
+    }
+
+    private void fetchEvents(final WireClient wireClient, int count) {
+        try {
+            Calendar service = CalendarAPI.getCalendarService(wireClient.getId());
+            DateTime now = new DateTime(System.currentTimeMillis());
+            Events events = service.events().list("primary")
+                    .setMaxResults(count)
+                    .setTimeMin(now)
+                    .setOrderBy("startTime")
+                    .setSingleEvents(true)
+                    .execute();
+
+            for (final Event event : events.getItems()) {
+                String id = String.format("%s-%s", wireClient.getId(), event.getId());
+                if (remindersMap.put(id, event) == null) {
+                    scheduleReminder(wireClient, event);
+                }
+            }
+
+        } catch (IOException e) {
+            Logger.warning(e.getLocalizedMessage());
         }
+    }
+
+    private void scheduleReminder(final WireClient wireClient, final Event event) {
+        DateTime start = event.getStart().getDateTime();
+        long startUTC = start.getValue() - start.getTimeZoneShift();
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    String msg = String.format("**%s** in **%d** minutes", event.getSummary(), REMIND_IN);
+                    wireClient.sendText(msg);
+                } catch (Exception e) {
+                    Logger.warning(e.getLocalizedMessage());
+                }
+            }
+        }, new Date(startUTC - TimeUnit.MINUTES.toMillis(REMIND_IN)));
     }
 
     @Override
@@ -70,8 +118,6 @@ public class MessageHandler extends MessageHandlerBase {
 
                     Picture preview = uploadPreview(client, "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
                     client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
-
-                    scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
                 } catch (Exception e) {
                     e.printStackTrace();
                     Logger.error(e.getMessage());
@@ -101,46 +147,6 @@ public class MessageHandler extends MessageHandlerBase {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void scheduleTimer(final WireClient client, final long delay) {
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                String botId = client.getId();
-                try {
-                    Calendar service = CalendarAPI.getCalendarService(botId);
-
-                    long current = System.currentTimeMillis();
-                    DateTime now = new DateTime(System.currentTimeMillis());
-                    Events events = service.events().list("primary")
-                            .setMaxResults(2)
-                            .setTimeMin(now)
-                            .setOrderBy("startTime")
-                            .setSingleEvents(true)
-                            .execute();
-
-                    for (Event event : events.getItems()) {
-                        DateTime start = event.getStart().getDateTime();
-                        long startUTC = start.getValue() - start.getTimeZoneShift();
-                        long in = startUTC - current;
-
-                        if (in > 0 && in < delay) {
-                            String msg = String.format("**%s** in %d minutes\n",
-                                    event.getSummary(),
-                                    TimeUnit.MILLISECONDS.toMinutes(in));
-
-                            client.sendText(msg);
-                        }
-                    }
-                } catch (Exception e) {
-                    //repo.purgeBot(botId);
-                    Logger.warning("Periodic timer failed: Bot: %s, %s",
-                            botId,
-                            e.getMessage());
-                }
-            }
-        }, TimeUnit.SECONDS.toMillis(10), delay);
     }
 
     private String listEvents(Calendar service) throws java.io.IOException {
