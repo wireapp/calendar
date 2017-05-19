@@ -37,8 +37,7 @@ class CalendarAPI {
 
     static String getAuthUrl(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
-        GoogleAuthorizationCodeRequestUrl url = flow.newAuthorizationUrl();
-        return url
+        return flow.newAuthorizationUrl()
                 .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
                 .setState(botId)
                 .build();
@@ -46,20 +45,18 @@ class CalendarAPI {
 
     static Credential processAuthCode(String botId, String code) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
-        GoogleAuthorizationCodeTokenRequest req = flow.newTokenRequest(code);
-        GoogleTokenResponse response = req
+        GoogleTokenResponse response = flow.newTokenRequest(code)
                 .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
                 .execute();
 
-        Credential ret = flow.createAndStoreCredential(response, botId);
         Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
                 botId,
                 response.getAccessToken() != null,
                 response.getRefreshToken() != null,
-                TimeUnit.SECONDS.toMinutes(ret.getExpiresInSeconds())
+                TimeUnit.SECONDS.toMinutes(response.getExpiresInSeconds())
         );
 
-        return ret;
+        return flow.createAndStoreCredential(response, botId);
     }
 
     static Calendar getCalendarService(String botId) throws IOException {
@@ -79,6 +76,7 @@ class CalendarAPI {
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
                     .setDataStoreFactory(factory)
                     .setAccessType("offline")
+                    .setApprovalPrompt("force")
                     .addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
                     .build();
             flows.put(botId, flow);

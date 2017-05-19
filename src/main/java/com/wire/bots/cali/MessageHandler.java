@@ -56,6 +56,11 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
+    public String getName() {
+        return "Cali";
+    }
+
+    @Override
     public void onNewConversation(final WireClient client) {
         executor.execute(new Runnable() {
             @Override
@@ -129,7 +134,7 @@ public class MessageHandler extends MessageHandlerBase {
                         }
                     }
                 } catch (Exception e) {
-                    //e.printStackTrace();
+                    //repo.purgeBot(botId);
                     Logger.warning("Periodic timer failed: Bot: %s, %s",
                             botId,
                             e.getMessage());
