@@ -37,12 +37,16 @@ import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends MessageHandlerBase {
-    private static final int DELAY = 30;
+    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
+    private final Timer timer = new Timer();
+
+    private static final int DELAY = 15;
     private final ClientRepo repo;
-    private Timer timer = new Timer();
 
     MessageHandler(ClientRepo repo) {
         this.repo = repo;
@@ -52,18 +56,45 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
-    public void onNewConversation(WireClient client) {
+    public void onNewConversation(final WireClient client) {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String authUrl = CalendarAPI.getAuthUrl(client.getId());
+
+                    Picture preview = uploadPreview(client, "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
+                    client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
+
+                    scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Logger.error(e.getMessage());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onText(WireClient client, TextMessage msg) {
         try {
-            String authUrl = CalendarAPI.getAuthUrl(client.getId());
+            if (msg.getText().equalsIgnoreCase("/auth")) {
+                String authUrl = CalendarAPI.getAuthUrl(client.getId());
+                client.sendText(authUrl);
+            } else if (msg.getText().equalsIgnoreCase("/list")) {
+                try {
+                    Calendar service = CalendarAPI.getCalendarService(client.getId());
 
-            Picture preview = uploadPreview(client,
-                    "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
-            client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
-
-            scheduleTimer(client, TimeUnit.MINUTES.toMillis(DELAY));
+                    String text = listEvents(service);
+                    client.sendText(text);
+                } catch (GoogleJsonResponseException ex) {
+                    Logger.warning(ex.getLocalizedMessage());
+                    client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
+                            "to your Google account");
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            Logger.error(e.getMessage());
         }
     }
 
@@ -71,11 +102,10 @@ public class MessageHandler extends MessageHandlerBase {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                String botId = client.getId();
                 try {
-                    String botId = client.getId();
-                    CalendarAPI.getCredential(botId).refreshToken();
-
                     Calendar service = CalendarAPI.getCalendarService(botId);
+
                     long current = System.currentTimeMillis();
                     DateTime now = new DateTime(System.currentTimeMillis());
                     Events events = service.events().list("primary")
@@ -99,31 +129,13 @@ public class MessageHandler extends MessageHandlerBase {
                         }
                     }
                 } catch (Exception e) {
-                   // Logger.warning("Periodic timer failed: %s", e.getLocalizedMessage());
+                    //e.printStackTrace();
+                    Logger.warning("Periodic timer failed: Bot: %s, %s",
+                            botId,
+                            e.getMessage());
                 }
             }
-        }, TimeUnit.MINUTES.toMillis(1), delay);
-    }
-
-    @Override
-    public void onText(WireClient client, TextMessage msg) {
-        try {
-            if (msg.getText().equalsIgnoreCase("/auth")) {
-                String authUrl = CalendarAPI.getAuthUrl(client.getId());
-                client.sendText(authUrl);
-            } else if (msg.getText().equalsIgnoreCase("/list")) {
-                Calendar service = CalendarAPI.getCalendarService(client.getId());
-                try {
-                    String text = listEvents(service);
-                    client.sendText(text);
-                } catch (GoogleJsonResponseException ex) {
-                    client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
-                            "to your Google account");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        }, TimeUnit.SECONDS.toMillis(10), delay);
     }
 
     private String listEvents(Calendar service) throws java.io.IOException {

@@ -10,38 +10,33 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
+import com.wire.bots.sdk.Logger;
 
 import java.io.*;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 class CalendarAPI {
     private static final String APPLICATION_NAME = "Wire Cali Bot";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static HttpTransport HTTP_TRANSPORT;
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_READONLY);
-    private static GoogleAuthorizationCodeFlow flow;
-    private static File dataDir = new File(Service.CONFIG.getCryptoDir(), "/.credentials/cali");
-    private static FileDataStoreFactory factory;
+    private static GoogleClientSecrets clientSecrets;
+    private static ConcurrentHashMap<String, GoogleAuthorizationCodeFlow> flows = new ConcurrentHashMap<>();
 
     static {
         try (InputStream in = new FileInputStream("/etc/cali/client_secret.json")) {
+            clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-            GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-            factory = new FileDataStoreFactory(dataDir);
-
-            // Load client secrets.
-            flow = new GoogleAuthorizationCodeFlow.Builder(
-                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                    .setDataStoreFactory(factory)
-                    .setAccessType("offline")
-                    .build();
         } catch (Exception t) {
             t.printStackTrace();
         }
     }
 
     static String getAuthUrl(String botId) throws IOException {
+        GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleAuthorizationCodeRequestUrl url = flow.newAuthorizationUrl();
         return url
                 .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
@@ -49,29 +44,45 @@ class CalendarAPI {
                 .build();
     }
 
-    static void processAuthCode(String botId, String code) throws IOException {
+    static Credential processAuthCode(String botId, String code) throws IOException {
+        GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleAuthorizationCodeTokenRequest req = flow.newTokenRequest(code);
         GoogleTokenResponse response = req
                 .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
                 .execute();
-        flow.createAndStoreCredential(response, botId);
 
-        renewToken(botId);
+        Credential ret = flow.createAndStoreCredential(response, botId);
+        Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
+                botId,
+                response.getAccessToken() != null,
+                response.getRefreshToken() != null,
+                TimeUnit.SECONDS.toMinutes(ret.getExpiresInSeconds())
+        );
+
+        return ret;
     }
 
     static Calendar getCalendarService(String botId) throws IOException {
-        return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredential(botId))
+        Credential credential = getFlow(botId).loadCredential(botId);
+        return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
     }
 
-    static Credential getCredential(String botId) throws IOException {
-        return flow.loadCredential(botId);
-    }
+    private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
+        GoogleAuthorizationCodeFlow flow = flows.get(botId);
+        if (flow == null) {
+            File dataDir = new File(Service.CONFIG.getCryptoDir(), "/.credentials/cali/" + botId);
+            FileDataStoreFactory factory = new FileDataStoreFactory(dataDir);
 
-    static void renewToken(String botId) throws IOException {
-        GoogleCredential.Builder b = new GoogleCredential.Builder();
-        DataStoreCredentialRefreshListener refreshListener = new DataStoreCredentialRefreshListener(botId, factory);
-        b.addRefreshListener(refreshListener);
+            flow = new GoogleAuthorizationCodeFlow.Builder(
+                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+                    .setDataStoreFactory(factory)
+                    .setAccessType("offline")
+                    .addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
+                    .build();
+            flows.put(botId, flow);
+        }
+        return flow;
     }
 }
