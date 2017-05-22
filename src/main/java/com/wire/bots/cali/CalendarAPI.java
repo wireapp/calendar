@@ -2,7 +2,9 @@ package com.wire.bots.cali;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.DataStoreCredentialRefreshListener;
-import com.google.api.client.googleapis.auth.oauth2.*;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -10,13 +12,11 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
-import com.wire.bots.sdk.Logger;
 
 import java.io.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 class CalendarAPI {
     private static final String APPLICATION_NAME = "Wire Cali Bot";
@@ -27,7 +27,7 @@ class CalendarAPI {
     private static ConcurrentHashMap<String, GoogleAuthorizationCodeFlow> flows = new ConcurrentHashMap<>();
 
     static {
-        try (InputStream in = new FileInputStream("/etc/cali/client_secret.json")) {
+        try (InputStream in = new FileInputStream(Service.CONFIG.getSecretPath())) {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
         } catch (Exception t) {
@@ -48,13 +48,6 @@ class CalendarAPI {
         GoogleTokenResponse response = flow.newTokenRequest(code)
                 .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
                 .execute();
-
-        Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
-                botId,
-                response.getAccessToken() != null,
-                response.getRefreshToken() != null,
-                TimeUnit.SECONDS.toMinutes(response.getExpiresInSeconds())
-        );
 
         return flow.createAndStoreCredential(response, botId);
     }

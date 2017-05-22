@@ -19,15 +19,9 @@
 package com.wire.bots.cali;
 
 public class Config extends com.wire.bots.sdk.Configuration {
-    public String name;
-    public int accent;
+    String secretPath;
 
-    public String getName() {
-        return name;
+    public String getSecretPath() {
+        return secretPath;
     }
-
-    public int getAccent() {
-        return accent;
-    }
-
 }

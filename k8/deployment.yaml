@@ -35,7 +35,6 @@ spec:
                   name: cali-knows
                   key: keystore_password
 
-
           volumeMounts:
             - name: cali-disk
               mountPath: /var/lib/cali/crypto
@@ -46,9 +45,9 @@ spec:
           command:
             - "/usr/bin/java"
             - "-Ddw.server.applicationConnectors[1].keyStorePassword=$(KEYSTORE_PASSWORD)"
-            - "-Ddw.server.applicationConnectors[1].keyStorePath=keystore.jks"
             - "-Ddw.auth=$(TOKEN)"
             - "-Ddw.cryptoDir=/var/lib/cali/crypto"
+            - "-Ddw.secretPath=/etc/cali/client_secret.json"
             - "-jar"
             - "cali.jar"
             - "server"
@@ -77,6 +76,8 @@ spec:
     - name: https
       port: 443
       protocol: TCP
+      
     - name: http
       port: 80
+      targetPort: 8080
       protocol: TCP

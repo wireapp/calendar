@@ -3,3 +3,5 @@ certs/
 crypto/
 *.iml
 .idea/
+*.log
+keystore.jks
