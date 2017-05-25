@@ -75,6 +75,7 @@ spec:
   ports:
     - name: https
       port: 443
+      targetPort: 4443
       protocol: TCP
       
     - name: http
