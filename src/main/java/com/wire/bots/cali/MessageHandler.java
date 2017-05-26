@@ -18,7 +18,6 @@
 
 package com.wire.bots.cali;
 
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
@@ -68,14 +67,45 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onText(WireClient client, TextMessage msg) {
         try {
-            if (msg.getText().equalsIgnoreCase("/auth")) {
-                String authUrl = CalendarAPI.getAuthUrl(client.getId());
-                client.sendText(authUrl);
-            } else if (msg.getText().equalsIgnoreCase("/list")) {
+            String text = msg.getText();
+            if (text.equalsIgnoreCase("/auth")) {
+                showAuthLink(client);
+            } else if (text.equalsIgnoreCase("/list")) {
                 showCalendar(client);
+            } else {
+                scheduleNewEvent(client, text);
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void showAuthLink(WireClient client) throws Exception {
+        try {
+            String authUrl = CalendarAPI.getAuthUrl(client.getId());
+            client.sendText(authUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            client.sendText("Something went wrong :(");
+        }
+    }
+    
+    private void scheduleNewEvent(WireClient client, String text) throws Exception {
+        try {
+            Event event = CalendarAPI.addEvent(client.getId(), text.replace("/new", ""));
+            if (event == null)
+                client.sendText("Sorry, I did not get that.");
+            else {
+                String s = String.format("I've created new event for you:\n" +
+                                "**%s** on %s\n%s",
+                        event.getSummary(),
+                        event.getStart().getDateTime().toString(),
+                        event.getHtmlLink());
+                client.sendText(s);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            client.sendText("Something went wrong :(");
         }
     }
 
@@ -96,8 +126,8 @@ public class MessageHandler extends MessageHandlerBase {
                 sb.append(String.format("**%s** at %s\n", event.getSummary(), start));
             }
             client.sendText(sb.toString());
-        } catch (GoogleJsonResponseException ex) {
-            Logger.warning(ex.getLocalizedMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
             client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
                     "to your Google account");
         }

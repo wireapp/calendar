@@ -57,13 +57,13 @@ public class AlertManager {
                 }
             }
         } catch (IOException e) {
-            Logger.warning(e.getLocalizedMessage());
+            //Logger.warning(e.getLocalizedMessage());
         }
     }
 
     private void scheduleReminder(final WireClient wireClient, final Event event) {
         DateTime start = event.getStart().getDateTime();
-        long startUTC = start.getValue() - start.getTimeZoneShift();
+        //long startUTC = start.getValue() - start.getTimeZoneShift();
 
         timer.schedule(new TimerTask() {
             @Override
@@ -76,7 +76,7 @@ public class AlertManager {
                     Logger.warning(e.getLocalizedMessage());
                 }
             }
-        }, new Date(startUTC - TimeUnit.MINUTES.toMillis(REMIND_IN)));
+        }, new Date(start.getValue() - TimeUnit.MINUTES.toMillis(REMIND_IN)));
     }
 
     private ArrayList<WireClient> getClients() {
