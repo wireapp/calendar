@@ -106,6 +106,13 @@ class CalendarAPI {
         return event;
     }
 
+    static Event getEvent(String botId, String eventId) throws IOException {
+        Calendar service = CalendarAPI.getCalendarService(botId);
+        Event event = service.events().get("primary", eventId)
+                .execute();
+        return event;
+    }
+
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = flows.get(botId);
         if (flow == null) {

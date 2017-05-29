@@ -15,8 +15,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class AlertManager {
-    private static final int REMIND_IN = 15;
-    private static final int PERIOD = 15;
+    private static final int REMIND_IN = 16;
+    private static final int PERIOD = 5;
 
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
@@ -24,7 +24,7 @@ public class AlertManager {
 
     AlertManager(ClientRepo repo) {
         this.repo = repo;
-        
+
         schedule();
     }
 
@@ -53,7 +53,12 @@ public class AlertManager {
             for (final Event event : events.getItems()) {
                 String id = String.format("%s-%s", wireClient.getId(), event.getId());
                 if (remindersMap.put(id, event) == null) {
-                    scheduleReminder(wireClient, event);
+                    final DateTime start = event.getStart().getDateTime();
+
+                    Date at = new Date(start.getValue() - TimeUnit.MINUTES.toMillis(REMIND_IN));
+                    if (at.getTime() > System.currentTimeMillis()) {
+                        scheduleReminder(wireClient, at, event.getId());
+                    }
                 }
             }
         } catch (IOException e) {
@@ -61,22 +66,34 @@ public class AlertManager {
         }
     }
 
-    private void scheduleReminder(final WireClient wireClient, final Event event) {
-        DateTime start = event.getStart().getDateTime();
-        //long startUTC = start.getValue() - start.getTimeZoneShift();
+    private void scheduleReminder(final WireClient wireClient, final Date at, final String eventId) {
 
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 try {
-                    wireClient.ping();
-                    String msg = String.format("**%s** in **%d** minutes", event.getSummary(), REMIND_IN);
-                    wireClient.sendText(msg);
+                    String botId = wireClient.getId();
+                    Event e = CalendarAPI.getEvent(botId, eventId);
+                    if (e != null) {
+                        DateTime eventStart = e.getStart().getDateTime();
+
+                        long l = eventStart.getValue() - System.currentTimeMillis();
+                        long minutes = TimeUnit.MILLISECONDS.toMinutes(l);
+
+                        //wireClient.ping();
+                        String msg = String.format("**%s** in **%d** minutes", e.getSummary(), minutes);
+                        //wireClient.sendText(msg);
+
+                        Logger.info("Reminder `%s` sent to %s for: %s",
+                                msg,
+                                botId,
+                                eventStart.toString());
+                    }
                 } catch (Exception e) {
                     Logger.warning(e.getLocalizedMessage());
                 }
             }
-        }, new Date(start.getValue() - TimeUnit.MINUTES.toMillis(REMIND_IN)));
+        }, at);
     }
 
     private ArrayList<WireClient> getClients() {
