@@ -31,8 +31,12 @@ import com.wire.bots.sdk.assets.Picture;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends MessageHandlerBase {
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
@@ -89,17 +93,20 @@ public class MessageHandler extends MessageHandlerBase {
             client.sendText("Something went wrong :(");
         }
     }
-    
+
     private void scheduleNewEvent(WireClient client, String text) throws Exception {
         try {
-            Event event = CalendarAPI.addEvent(client.getId(), text.replace("/new", ""));
+            Event event = CalendarAPI.addEvent(client.getId(), text);
             if (event == null)
                 client.sendText("Sorry, I did not get that.");
             else {
+                DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+                DateTime dateTime = event.getStart().getDateTime();
+                long value = dateTime.getValue() + TimeUnit.MINUTES.toMillis(dateTime.getTimeZoneShift());
                 String s = String.format("I've created new event for you:\n" +
                                 "**%s** on %s\n%s",
                         event.getSummary(),
-                        event.getStart().getDateTime().toString(),
+                        format.format(new Date(value)),
                         event.getHtmlLink());
                 client.sendText(s);
             }
@@ -111,15 +118,16 @@ public class MessageHandler extends MessageHandlerBase {
 
     private void showCalendar(WireClient client) throws Exception {
         try {
-            Calendar service = CalendarAPI.getCalendarService(client.getId());
             DateTime now = new DateTime(System.currentTimeMillis());
+
+            Calendar service = CalendarAPI.getCalendarService(client.getId());
+            StringBuilder sb = new StringBuilder("Upcoming events:\n");
             Events events = service.events().list("primary")
                     .setMaxResults(5)
                     .setTimeMin(now)
                     .setOrderBy("startTime")
                     .setSingleEvents(true)
                     .execute();
-            StringBuilder sb = new StringBuilder("Upcoming events:\n");
             for (Event event : events.getItems()) {
                 EventDateTime eventStart = event.getStart();
                 DateTime start = eventStart.getDateTime();

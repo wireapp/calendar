@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class AlertManager {
+class AlertManager {
     private static final int REMIND_IN = 16;
     private static final int PERIOD = 5;
 
@@ -33,18 +33,18 @@ public class AlertManager {
             @Override
             public void run() {
                 for (WireClient client : getClients()) {
-                    fetchEvents(client, 3);
+                    fetchEvents(client);
                 }
             }
         }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
     }
 
-    private void fetchEvents(final WireClient wireClient, int count) {
+    private void fetchEvents(final WireClient wireClient) {
         try {
             Calendar service = CalendarAPI.getCalendarService(wireClient.getId());
             DateTime now = new DateTime(System.currentTimeMillis());
             Events events = service.events().list("primary")
-                    .setMaxResults(count)
+                    .setMaxResults(3)
                     .setTimeMin(now)
                     .setOrderBy("startTime")
                     .setSingleEvents(true)
@@ -67,7 +67,6 @@ public class AlertManager {
     }
 
     private void scheduleReminder(final WireClient wireClient, final Date at, final String eventId) {
-
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -80,9 +79,9 @@ public class AlertManager {
                         long l = eventStart.getValue() - System.currentTimeMillis();
                         long minutes = TimeUnit.MILLISECONDS.toMinutes(l);
 
-                        //wireClient.ping();
+                        wireClient.ping();
                         String msg = String.format("**%s** in **%d** minutes", e.getSummary(), minutes);
-                        //wireClient.sendText(msg);
+                        wireClient.sendText(msg);
 
                         Logger.info("Reminder `%s` sent to %s for: %s",
                                 msg,
@@ -99,7 +98,7 @@ public class AlertManager {
     private ArrayList<WireClient> getClients() {
         final ArrayList<WireClient> ret = new ArrayList<>();
         File dir = new File(repo.getPath());
-        File[] files = dir.listFiles(new FileFilter() {
+        dir.listFiles(new FileFilter() {
             @Override
             public boolean accept(File file) {
                 String botId = file.getName();

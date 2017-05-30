@@ -73,18 +73,12 @@ class CalendarAPI {
         if (dateGroups.isEmpty())
             return null;
 
-        int timeZoneShift = getTimeZoneShift(botId);
+        int tzShift = getTimeZoneShift(botId);
 
         DateGroup dateGroup = dateGroups.get(0);
         Date s = dateGroup.getDates().get(0);
 
-        Logger.info("`%s` as `%s` recurrent: %s, shift: %d",
-                dateGroup.getText(),
-                s.toString(),
-                dateGroup.isRecurring(),
-                timeZoneShift);
-
-        DateTime startDateTime = new DateTime(s.getTime() - TimeUnit.MINUTES.toMillis(timeZoneShift));
+        DateTime startDateTime = new DateTime(s.getTime() - TimeUnit.MINUTES.toMillis(tzShift));
         EventDateTime startEvent = new EventDateTime()
                 .setDateTime(startDateTime);
 
@@ -103,14 +97,21 @@ class CalendarAPI {
                 .insert("primary", event)
                 .execute();
 
+        Logger.info("`%s` at `%s` recurrent: %s, event: %s",
+                dateGroup.getText(),
+                s.toString(),
+                dateGroup.isRecurring(),
+                event.getStart().getDateTime().toString());
+
         return event;
     }
 
     static Event getEvent(String botId, String eventId) throws IOException {
         Calendar service = CalendarAPI.getCalendarService(botId);
-        Event event = service.events().get("primary", eventId)
+        return service
+                .events()
+                .get("primary", eventId)
                 .execute();
-        return event;
     }
 
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
