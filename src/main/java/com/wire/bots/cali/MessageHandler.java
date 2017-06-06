@@ -39,6 +39,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends MessageHandlerBase {
+    private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
 
     MessageHandler(ClientRepo repo) {
@@ -56,10 +57,7 @@ public class MessageHandler extends MessageHandlerBase {
             @Override
             public void run() {
                 try {
-                    String authUrl = CalendarAPI.getAuthUrl(client.getId());
-
-                    Picture preview = uploadPreview(client, "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png");
-                    client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
+                    showAuthLink(client);
                 } catch (Exception e) {
                     e.printStackTrace();
                     Logger.error(e.getMessage());
@@ -87,7 +85,8 @@ public class MessageHandler extends MessageHandlerBase {
     private void showAuthLink(WireClient client) throws Exception {
         try {
             String authUrl = CalendarAPI.getAuthUrl(client.getId());
-            client.sendText(authUrl);
+            Picture preview = uploadPreview(client);
+            client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
         } catch (Exception e) {
             e.printStackTrace();
             client.sendText("Something went wrong :(");
@@ -119,6 +118,7 @@ public class MessageHandler extends MessageHandlerBase {
     private void showCalendar(WireClient client) throws Exception {
         try {
             DateTime now = new DateTime(System.currentTimeMillis());
+            DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
 
             Calendar service = CalendarAPI.getCalendarService(client.getId());
             StringBuilder sb = new StringBuilder("Upcoming events:\n");
@@ -131,7 +131,10 @@ public class MessageHandler extends MessageHandlerBase {
             for (Event event : events.getItems()) {
                 EventDateTime eventStart = event.getStart();
                 DateTime start = eventStart.getDateTime();
-                sb.append(String.format("**%s** at %s\n", event.getSummary(), start));
+                long value = start != null
+                        ? start.getValue() + TimeUnit.MINUTES.toMillis(start.getTimeZoneShift())
+                        : eventStart.getDate().getValue();
+                sb.append(String.format("**%s** on %s\n", event.getSummary(), format.format(new Date(value))));
             }
             client.sendText(sb.toString());
         } catch (Exception e) {
@@ -141,8 +144,8 @@ public class MessageHandler extends MessageHandlerBase {
         }
     }
 
-    private Picture uploadPreview(WireClient client, String imgUrl) throws Exception {
-        Picture preview = new Picture(imgUrl);
+    private Picture uploadPreview(WireClient client) throws Exception {
+        Picture preview = new Picture(PREVIEW_PIC_URL);
         preview.setPublic(true);
 
         AssetKey assetKey = client.uploadAsset(preview);
