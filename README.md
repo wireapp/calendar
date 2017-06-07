@@ -21,7 +21,7 @@ This is demo project that uses: [java-bot-sdk](https://github.com/wireapp/bot-sd
 you send it.
 
 
-## Build the project
+## Build the project 
  Modify the `Makefile` before the run in order to better reflect your company's name/country...
 
  Run:
