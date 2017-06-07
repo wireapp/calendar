@@ -54,6 +54,8 @@ class AlertManager {
                 String id = String.format("%s-%s", wireClient.getId(), event.getId());
                 if (remindersMap.put(id, event) == null) {
                     final DateTime start = event.getStart().getDateTime();
+                    if (start == null)
+                        continue;
 
                     Date at = new Date(start.getValue() - TimeUnit.MINUTES.toMillis(REMIND_IN));
                     if (at.getTime() > System.currentTimeMillis()) {

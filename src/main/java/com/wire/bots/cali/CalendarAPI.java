@@ -14,6 +14,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.wire.bots.sdk.Logger;
@@ -21,11 +22,14 @@ import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class CalendarAPI {
     private static final String APPLICATION_NAME = "Wire Cali Bot";
@@ -34,6 +38,8 @@ class CalendarAPI {
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR);
     private static GoogleClientSecrets clientSecrets;
     private static ConcurrentHashMap<String, GoogleAuthorizationCodeFlow> flows = new ConcurrentHashMap<>();
+    private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
+            Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", Pattern.CASE_INSENSITIVE);
 
     static {
         try (InputStream in = new FileInputStream(Service.CONFIG.getSecretPath())) {
@@ -86,11 +92,15 @@ class CalendarAPI {
         EventDateTime end = new EventDateTime()
                 .setDateTime(new DateTime(e));
 
-        String summary = line.replace(dateGroup.getText(), "");
+        List<EventAttendee> attendees = extractAttendees(line);
+
+        String summary = extractSummary(line, dateGroup.getText(), attendees);
+
         Event event = new Event()
                 .setSummary(summary.trim())
                 .setStart(startEvent)
-                .setEnd(end);
+                .setEnd(end)
+                .setAttendees(attendees);
 
         event = getCalendarService(botId)
                 .events()
@@ -104,6 +114,27 @@ class CalendarAPI {
                 event.getStart().getDateTime().toString());
 
         return event;
+    }
+
+    private static String extractSummary(String line, String dates, List<EventAttendee> attendees) {
+        String ret = line.replace(dates, "");
+        for (EventAttendee attendee : attendees) {
+            ret = ret.replace(attendee.getEmail(), "");
+        }
+        ret = ret.replace("with", "");
+        return ret.trim();
+    }
+
+    private static List<EventAttendee> extractAttendees(String summary) {
+        ArrayList<EventAttendee> ret = new ArrayList<>();
+
+        ArrayList<String> emails = extractEmail(summary);
+        for (String email : emails) {
+            EventAttendee eventAttendee = new EventAttendee()
+                    .setEmail(email);
+            ret.add(eventAttendee);
+        }
+        return ret;
     }
 
     static Event getEvent(String botId, String eventId) throws IOException {
@@ -149,5 +180,14 @@ class CalendarAPI {
             e.printStackTrace();
             return 0;
         }
+    }
+
+    static ArrayList<String> extractEmail(String emailStr) {
+        ArrayList<String> ret = new ArrayList<>();
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(emailStr);
+        while (matcher.find()) {
+            ret.add(matcher.group());
+        }
+        return ret;
     }
 }

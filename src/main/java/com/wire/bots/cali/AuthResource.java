@@ -36,7 +36,7 @@ public class AuthResource {
             WireClient wireClient = repo.getWireClient(bot);
             if (wireClient != null) {
                 String msg = "Cool! You can schedule a meeting now just by simply writing:\n" +
-                        "`Dinner tomorrow at 2pm`\n" +
+                        "`Dinner tomorrow at 2pm with bob@email.com`\n" +
                         "or\n" +
                         "`Fishing every Tuesday at 4am till noon`\n" +
                         "or\n" +

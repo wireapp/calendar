@@ -9,7 +9,7 @@
     <version>0.1.4</version>
 
     <properties>
-        <bot.version>1.0.3</bot.version>
+        <bot.version>1.0.4</bot.version>
         <jackson.version>2.8.7</jackson.version>
     </properties>
 
@@ -102,7 +102,12 @@
             <artifactId>prettytime-nlp</artifactId>
             <version>4.0.0.Final</version>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
