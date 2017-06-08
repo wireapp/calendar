@@ -105,6 +105,7 @@ class CalendarAPI {
         event = getCalendarService(botId)
                 .events()
                 .insert("primary", event)
+                .setSendNotifications(true)
                 .execute();
 
         Logger.info("`%s` at `%s` recurrent: %s, event: %s",
