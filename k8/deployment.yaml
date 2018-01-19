@@ -35,6 +35,26 @@ spec:
                   name: cali-knows
                   key: keystore_password
 
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+
+          livenessProbe:
+            httpGet:
+              path: /bots/status
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+            periodSeconds: 10
+
+          # for L7 LB
+          readinessProbe:
+            httpGet:
+              path: /bots/status
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+
           volumeMounts:
             - name: cali-disk
               mountPath: /var/lib/cali/crypto
@@ -71,13 +91,8 @@ metadata:
 spec:
   selector:
     name: cali
-  type: LoadBalancer
+  type: NodePort
   ports:
-    - name: https
-      port: 443
-      targetPort: 4443
-      protocol: TCP
-      
     - name: http
       port: 80
       targetPort: 8080
