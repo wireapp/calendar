@@ -53,7 +53,7 @@ class CalendarAPI {
     static String getAuthUrl(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
         return flow.newAuthorizationUrl()
-                .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
+                .setRedirectUri(Service.CONFIG.getRedirect())
                 .setState(botId)
                 .build();
     }
@@ -61,7 +61,7 @@ class CalendarAPI {
     static Credential processAuthCode(String botId, String code) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleTokenResponse response = flow.newTokenRequest(code)
-                .setRedirectUri("http://cali.35.187.84.91.xip.io/user/auth/google_oauth2/callback")
+                .setRedirectUri(Service.CONFIG.getRedirect())
                 .execute();
 
         return flow.createAndStoreCredential(response, botId);

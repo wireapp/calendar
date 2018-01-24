@@ -18,10 +18,15 @@
 
 package com.wire.bots.cali;
 
-public class Config extends com.wire.bots.sdk.Configuration {
+class Config extends com.wire.bots.sdk.Configuration {
     String secretPath;
+    String redirect;
 
-    public String getSecretPath() {
+    String getRedirect() {
+        return redirect;
+    }
+
+    String getSecretPath() {
         return secretPath;
     }
 }

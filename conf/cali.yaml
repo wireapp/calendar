@@ -2,19 +2,11 @@ server:
   applicationConnectors:
     - type: http
       port: 8080
-    - type: https
-      port: 443
-      keyStorePath: keystore.jks
-      certAlias: myservercert
-      validateCerts: false
-      validatePeers: false
 
-  adminConnectors:
-    - type: http
-      port: 8081
   requestLog:
       appenders: []
 
 auth: your_auth
 cryptoDir: crypto
 secretPath: conf/client_secret.json
+redirect: http://cali.services.wire.com/user/auth/google_oauth2/callback

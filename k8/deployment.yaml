@@ -29,12 +29,6 @@ spec:
                   name: cali-knows
                   key: token
 
-            - name: KEYSTORE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: cali-knows
-                  key: keystore_password
-
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -56,15 +50,14 @@ spec:
             timeoutSeconds: 30
 
           volumeMounts:
-            - name: cali-disk
+            - name: disk
               mountPath: /var/lib/cali/crypto
 
-            - name: cali-config
+            - name: config
               mountPath: /etc/cali
 
           command:
             - "/usr/bin/java"
-            - "-Ddw.server.applicationConnectors[1].keyStorePassword=$(KEYSTORE_PASSWORD)"
             - "-Ddw.auth=$(TOKEN)"
             - "-Ddw.cryptoDir=/var/lib/cali/crypto"
             - "-Ddw.secretPath=/etc/cali/client_secret.json"
@@ -74,12 +67,12 @@ spec:
             - "/etc/cali/cali.yaml"
 
       volumes:
-        - name: cali-disk
+        - name: disk
           gcePersistentDisk:
             pdName: cali-disk
             fsType: ext4
 
-        - name: cali-config
+        - name: config
           configMap:
             name: cali-config
 
