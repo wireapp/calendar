@@ -21,18 +21,11 @@ package com.wire.bots.cali;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
 import io.dropwizard.setup.Environment;
-import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
-import org.ocpsoft.prettytime.nlp.parse.DateGroup;
-
-import java.util.List;
 
 public class Service extends Server<Config> {
     static Config CONFIG;
 
     public static void main(String[] args) throws Exception {
-        List<DateGroup> dateGroups = new PrettyTimeParser().
-                parseSyntax("Fishing every Tuesday at 4am till noon");
-
         new Service().run(args);
     }
 

@@ -18,15 +18,19 @@
 
 package com.wire.bots.cali;
 
-class Config extends com.wire.bots.sdk.Configuration {
-    String secretPath;
-    String redirect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.wire.bots.sdk.Configuration;
 
-    String getRedirect() {
+@JsonIgnoreProperties(ignoreUnknown = true)
+class Config extends Configuration {
+    public String secretPath;
+    public String redirect;
+
+    public String getRedirect() {
         return redirect;
     }
 
-    String getSecretPath() {
+    public String getSecretPath() {
         return secretPath;
     }
 }

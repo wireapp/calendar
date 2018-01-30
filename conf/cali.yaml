@@ -9,4 +9,4 @@ server:
 auth: your_auth
 cryptoDir: crypto
 secretPath: conf/client_secret.json
-redirect: http://cali.services.wire.com/user/auth/google_oauth2/callback
+redirect: 'http://cali.services.wire.com/user/auth/google_oauth2/callback'
