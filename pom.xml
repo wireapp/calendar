@@ -6,7 +6,7 @@
 
     <artifactId>cali</artifactId>
     <groupId>com.wire.bots</groupId>
-    <version>0.1.4</version>
+    <version>0.2.0</version>
 
     <properties>
         <bot.version>1.0.4</bot.version>
