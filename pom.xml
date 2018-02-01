@@ -15,6 +15,13 @@
 
     <repositories>
         <repository>
+            <id>lithium</id>
+            <url>https://packagecloud.io/dkovacevic/lithium/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+        <repository>
             <id>sonatype-snapshots</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
         </repository>
