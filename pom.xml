@@ -9,17 +9,11 @@
     <version>0.2.0</version>
 
     <properties>
-        <bot.version>1.0.4</bot.version>
+        <bot.version>1.1.3</bot.version>
         <jackson.version>2.8.7</jackson.version>
     </properties>
 
     <repositories>
-        <repository>
-            <id>bintray</id>
-            <name>Bintray</name>
-            <url>https://dl.bintray.com/wire-android/snapshots/</url>
-            <layout>default</layout>
-        </repository>
         <repository>
             <id>sonatype-snapshots</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
@@ -69,7 +63,7 @@
     <dependencies>
         <dependency>
             <groupId>com.wire.bots</groupId>
-            <artifactId>bot-sdk</artifactId>
+            <artifactId>lithium</artifactId>
             <version>${bot.version}</version>
         </dependency>
         <dependency>

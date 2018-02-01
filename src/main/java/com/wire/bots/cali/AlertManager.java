@@ -84,11 +84,6 @@ class AlertManager {
                         wireClient.ping();
                         String msg = String.format("**%s** in **%d** minutes", e.getSummary(), minutes);
                         wireClient.sendText(msg);
-
-                        Logger.info("Reminder `%s` sent to %s for: %s",
-                                msg,
-                                botId,
-                                eventStart.toString());
                     }
                 } catch (Exception e) {
                     Logger.warning(e.getLocalizedMessage());

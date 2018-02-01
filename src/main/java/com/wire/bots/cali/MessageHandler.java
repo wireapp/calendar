@@ -70,6 +70,9 @@ public class MessageHandler extends MessageHandlerBase {
     public void onText(WireClient client, TextMessage msg) {
         try {
             String text = msg.getText();
+            if (!text.startsWith("/"))
+                return;
+
             if (text.equalsIgnoreCase("/auth")) {
                 showAuthLink(client);
             } else if (text.equalsIgnoreCase("/list")) {
