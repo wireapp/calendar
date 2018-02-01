@@ -30,6 +30,8 @@ import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.assets.Picture;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
+import com.wire.bots.sdk.server.model.Member;
+import com.wire.bots.sdk.server.model.NewBot;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -47,6 +49,25 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
+    public boolean onNewBot(NewBot newBot) {
+        Logger.info("onNewBot: bot: %s, user: %s, token: %s",
+                newBot.id,
+                newBot.origin.id,
+                newBot.token
+        );
+
+        for (Member member : newBot.conversation.members) {
+            if (member.service != null) {
+                Logger.warning("Rejecting NewBot. user: %s service: %s",
+                        newBot.origin.id,
+                        member.service.id);
+                return false; // we don't want to be in a conv if other bots are there.
+            }
+        }
+        return true;
+    }
+
+    @Override
     public String getName() {
         return "Cali";
     }
@@ -57,7 +78,7 @@ public class MessageHandler extends MessageHandlerBase {
             @Override
             public void run() {
                 try {
-                    showAuthLink(client);
+                    //showAuthLink(client);
                 } catch (Exception e) {
                     e.printStackTrace();
                     Logger.error(e.getMessage());
@@ -70,14 +91,12 @@ public class MessageHandler extends MessageHandlerBase {
     public void onText(WireClient client, TextMessage msg) {
         try {
             String text = msg.getText();
-            if (!text.startsWith("/"))
-                return;
-
+     
             if (text.equalsIgnoreCase("/auth")) {
                 showAuthLink(client);
             } else if (text.equalsIgnoreCase("/list")) {
                 showCalendar(client);
-            } else {
+            } else if (text.equalsIgnoreCase("/cali")) {
                 scheduleNewEvent(client, text);
             }
         } catch (Exception e) {
