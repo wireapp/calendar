@@ -24,7 +24,7 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.Logger;
+import com.wire.bots.sdk.tools.Logger;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.assets.Picture;
@@ -68,21 +68,13 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
-    public String getName() {
-        return "Cali";
-    }
-
-    @Override
     public void onNewConversation(final WireClient client) {
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    //showAuthLink(client);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Logger.error(e.getMessage());
-                }
+        executor.execute(() -> {
+            try {
+                //showAuthLink(client);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Logger.error(e.getMessage());
             }
         });
     }

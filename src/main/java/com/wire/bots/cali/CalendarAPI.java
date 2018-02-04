@@ -17,7 +17,7 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
-import com.wire.bots.sdk.Logger;
+import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
@@ -149,7 +149,7 @@ class CalendarAPI {
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = flows.get(botId);
         if (flow == null) {
-            File dataDir = new File(Service.CONFIG.getCryptoDir(), "/.credentials/cali/" + botId);
+            File dataDir = new File(Service.CONFIG.data, "/.credentials/cali/" + botId);
             FileDataStoreFactory factory = new FileDataStoreFactory(dataDir);
 
             flow = new GoogleAuthorizationCodeFlow.Builder(

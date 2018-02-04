@@ -2,7 +2,7 @@ package com.wire.bots.cali;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.Logger;
+import com.wire.bots.sdk.tools.Logger;
 import com.wire.bots.sdk.WireClient;
 
 import javax.ws.rs.GET;

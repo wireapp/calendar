@@ -7,6 +7,6 @@ server:
       appenders: []
 
 auth: your_auth
-cryptoDir: crypto
+data: ./data
 secretPath: conf/client_secret.json
 redirect: 'http://cali.services.zinfra.io/user/auth/google_oauth2/callback'

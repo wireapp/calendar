@@ -3,11 +3,11 @@ sudo: 'required'
 language: java
 
 services:
-  - 'docker'
+- docker
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD ;
-      docker build -t dejankovacevic/cali-bot:0.2.$TRAVIS_BUILD_NUMBER . ;
+      docker build -t dejankovacevic/cali-bot:latest . ;
       docker push dejankovacevic/cali-bot ;
     fi

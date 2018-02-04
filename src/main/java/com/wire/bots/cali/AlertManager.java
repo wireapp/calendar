@@ -5,11 +5,9 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.Events;
 import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.Logger;
 import com.wire.bots.sdk.WireClient;
+import com.wire.bots.sdk.tools.Logger;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -93,19 +91,7 @@ class AlertManager {
     }
 
     private ArrayList<WireClient> getClients() {
-        final ArrayList<WireClient> ret = new ArrayList<>();
-        File dir = new File(repo.getPath());
-        dir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                String botId = file.getName();
-                WireClient wireClient = repo.getWireClient(botId);
-                boolean valid = wireClient != null;
-                if (valid)
-                    ret.add(wireClient);
-                return valid;
-            }
-        });
+        ArrayList<WireClient> ret = new ArrayList<>();
         return ret;
     }
 }

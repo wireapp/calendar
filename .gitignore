@@ -1,7 +1,7 @@
 target/
-certs/
+data/
 crypto/
 *.iml
 .idea/
 *.log
-keystore.jks
+client-secret.json
