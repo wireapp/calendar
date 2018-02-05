@@ -20,13 +20,13 @@ package com.wire.bots.cali;
 
 import com.wire.bots.cryptonite.CryptoService;
 import com.wire.bots.cryptonite.StorageService;
-import com.wire.bots.cryptonite.client.CryptoClient;
-import com.wire.bots.cryptonite.client.StorageClient;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
 import com.wire.bots.sdk.factories.CryptoFactory;
 import com.wire.bots.sdk.factories.StorageFactory;
 import io.dropwizard.setup.Environment;
+
+import java.net.URI;
 
 public class Service extends Server<Config> {
     static Config CONFIG;
@@ -48,11 +48,11 @@ public class Service extends Server<Config> {
 
     @Override
     protected StorageFactory getStorageFactory(Config config) {
-        return botId -> new StorageService("cali", botId, new StorageClient(config.data));
+        return botId -> new StorageService("cali", botId, new URI(config.data));
     }
 
     @Override
     protected CryptoFactory getCryptoFactory(Config config) {
-        return (botId) -> new CryptoService(botId, new CryptoClient(config.data));
+        return (botId) -> new CryptoService(botId, new URI(config.data));
     }
 }

@@ -50,11 +50,9 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public boolean onNewBot(NewBot newBot) {
-        Logger.info("onNewBot: bot: %s, user: %s, token: %s",
+        Logger.info("onNewBot: bot: %s, user: %s",
                 newBot.id,
-                newBot.origin.id,
-                newBot.token
-        );
+                newBot.origin.id);
 
         for (Member member : newBot.conversation.members) {
             if (member.service != null) {
@@ -71,10 +69,9 @@ public class MessageHandler extends MessageHandlerBase {
     public void onNewConversation(final WireClient client) {
         executor.execute(() -> {
             try {
-                //showAuthLink(client);
+                showAuthLink(client);
             } catch (Exception e) {
-                e.printStackTrace();
-                Logger.error(e.getMessage());
+                Logger.error("onNewConversation: %s", e.getMessage());
             }
         });
     }
@@ -83,16 +80,16 @@ public class MessageHandler extends MessageHandlerBase {
     public void onText(WireClient client, TextMessage msg) {
         try {
             String text = msg.getText();
-     
+
             if (text.equalsIgnoreCase("/auth")) {
                 showAuthLink(client);
             } else if (text.equalsIgnoreCase("/list")) {
                 showCalendar(client);
-            } else if (text.equalsIgnoreCase("/cali")) {
+            } else if (text.startsWith("/cali")) {
                 scheduleNewEvent(client, text);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.warning("onText: %s", e.getMessage());
         }
     }
 
@@ -102,8 +99,8 @@ public class MessageHandler extends MessageHandlerBase {
             Picture preview = uploadPreview(client);
             client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
         } catch (Exception e) {
-            e.printStackTrace();
-            client.sendText("Something went wrong :(");
+            Logger.warning("showAuthLink: %s", e.getMessage());
+            client.sendText("Something went wrong :(. Try: /auth");
         }
     }
 
@@ -124,8 +121,8 @@ public class MessageHandler extends MessageHandlerBase {
                 client.sendText(s);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            client.sendText("Something went wrong :(");
+            Logger.warning("scheduleNewEvent: %s", e.getMessage());
+            client.sendText("Something went wrong :(. Try: /auth");
         }
     }
 
@@ -152,7 +149,7 @@ public class MessageHandler extends MessageHandlerBase {
             }
             client.sendText(sb.toString());
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.warning("showCalendar: %s", e.getMessage());
             client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
                     "to your Google account");
         }

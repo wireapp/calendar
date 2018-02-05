@@ -108,11 +108,11 @@ class CalendarAPI {
                 .setSendNotifications(true)
                 .execute();
 
-        Logger.info("`%s` at `%s` recurrent: %s, event: %s",
-                dateGroup.getText(),
-                s.toString(),
-                dateGroup.isRecurring(),
-                event.getStart().getDateTime().toString());
+//        Logger.info("`%s` at `%s` recurrent: %s, event: %s",
+//                dateGroup.getText(),
+//                s.toString(),
+//                dateGroup.isRecurring(),
+//                event.getStart().getDateTime().toString());
 
         return event;
     }
@@ -178,7 +178,7 @@ class CalendarAPI {
 
             return events.getItems().get(0).getStart().getDateTime().getTimeZoneShift();
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.warning("getTimeZoneShift: %s", e.getMessage());
             return 0;
         }
     }

@@ -32,22 +32,18 @@ public class AuthResource {
                 TimeUnit.SECONDS.toMinutes(credential.getExpiresInSeconds())
         );
 
-        try {
-            WireClient wireClient = repo.getWireClient(bot);
-            if (wireClient != null) {
-                String msg = "Cool! You can schedule a meeting now just by simply writing:\n" +
-                        "/cali Dinner tomorrow at 2pm with bob@email.com\n" +
-                        "or\n" +
-                        "/cali Fishing every Tuesday at 4am till noon\n" +
-                        "or\n" +
-                        "/cali June 13 at 14:45 Dentist :(\n" +
-                        "I will remind you on time too ;)\n" +
-                        "You can list upcoming events by typing: `/list`";
+        WireClient wireClient = repo.getWireClient(bot);
+        if (wireClient != null) {
+            String msg = "Cool! You can schedule a meeting now just by simply writing:\n" +
+                    "/cali Dinner tomorrow at 2pm with bob@email.com\n" +
+                    "or\n" +
+                    "/cali Fishing every Tuesday at 4am till noon\n" +
+                    "or\n" +
+                    "/cali June 13 at 14:45 Dentist :(\n" +
+                    "I will remind you on time too ;)\n" +
+                    "You can list upcoming events by typing: `/list`";
 
-                wireClient.sendText(msg);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            wireClient.sendText(msg);
         }
 
         return Response.
