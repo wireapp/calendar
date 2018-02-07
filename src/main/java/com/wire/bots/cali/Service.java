@@ -29,6 +29,7 @@ import io.dropwizard.setup.Environment;
 import java.net.URI;
 
 public class Service extends Server<Config> {
+    private static final String SERVICE = "cali";
     static Config CONFIG;
 
     public static void main(String[] args) throws Exception {
@@ -48,11 +49,11 @@ public class Service extends Server<Config> {
 
     @Override
     protected StorageFactory getStorageFactory(Config config) {
-        return botId -> new StorageService("cali", botId, new URI(config.data));
+        return botId -> new StorageService(SERVICE, botId, new URI(config.data));
     }
 
     @Override
     protected CryptoFactory getCryptoFactory(Config config) {
-        return (botId) -> new CryptoService(botId, new URI(config.data));
+        return (botId) -> new CryptoService(SERVICE, botId, new URI(config.data));
     }
 }

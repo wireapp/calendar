@@ -30,8 +30,12 @@ class AlertManager {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                for (WireClient client : getClients()) {
-                    fetchEvents(client);
+                try {
+                    for (WireClient client : repo.listClients()) {
+                        fetchEvents(client);
+                    }
+                } catch (Exception e) {
+                    Logger.warning(e.getMessage());
                 }
             }
         }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
@@ -88,10 +92,5 @@ class AlertManager {
                 }
             }
         }, at);
-    }
-
-    private ArrayList<WireClient> getClients() {
-        ArrayList<WireClient> ret = new ArrayList<>();
-        return ret;
     }
 }
