@@ -20,6 +20,8 @@ package com.wire.bots.cali;
 
 import com.wire.bots.cryptonite.CryptoService;
 import com.wire.bots.cryptonite.StorageService;
+import com.wire.bots.cryptonite.client.CryptoClient;
+import com.wire.bots.cryptonite.client.StorageClient;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
 import com.wire.bots.sdk.factories.CryptoFactory;
@@ -31,6 +33,8 @@ import java.net.URI;
 public class Service extends Server<Config> {
     private static final String SERVICE = "cali";
     static Config CONFIG;
+    private StorageClient storageClient;
+    private CryptoClient cryptoClient;
 
     public static void main(String[] args) throws Exception {
         new Service().run(args);
@@ -38,8 +42,14 @@ public class Service extends Server<Config> {
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
-        CONFIG = config;
         return new MessageHandler(repo);
+    }
+
+    @Override
+    protected void initialize(Config config, Environment env) throws Exception {
+        CONFIG = config;
+        storageClient = new StorageClient(SERVICE, new URI(config.data));
+        cryptoClient = new CryptoClient(SERVICE, new URI(config.data));
     }
 
     @Override
@@ -49,11 +59,11 @@ public class Service extends Server<Config> {
 
     @Override
     protected StorageFactory getStorageFactory(Config config) {
-        return botId -> new StorageService(SERVICE, botId, new URI(config.data));
+        return botId -> new StorageService(botId, storageClient);
     }
 
     @Override
     protected CryptoFactory getCryptoFactory(Config config) {
-        return (botId) -> new CryptoService(SERVICE, botId, new URI(config.data));
+        return (botId) -> new CryptoService(botId, cryptoClient);
     }
 }
