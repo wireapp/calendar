@@ -103,8 +103,10 @@ public class MessageHandler extends MessageHandlerBase {
 
             boolean scheduled = callScheduler.schedule(botId, date);
             if (scheduled) {
-                callScheduler.saveSchedule(botId, text);
+                String schedule = date.toString();
+                callScheduler.saveSchedule(botId, schedule);
                 client.sendText("OK, I will start the call here at: " + format.format(date));
+                Logger.info("Scheduled call for: `%s`, bot: %s", schedule, botId);
             } else {
                 client.sendText("I am sorry, but I could not schedule the call for: " + format.format(date));
             }

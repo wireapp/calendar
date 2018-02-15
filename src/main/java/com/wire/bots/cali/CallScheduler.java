@@ -31,8 +31,9 @@ public class CallScheduler {
                 Date date = parse(schedule);
                 if (date != null) {
                     boolean scheduled = schedule(botId, date);
-                    if (scheduled)
-                        Logger.info("Scheduled call for: %s, bot: %s", date, botId);
+                    if (scheduled) {
+                        Logger.info("Loaded Scheduled call for: `%s`, bot: %s", date, botId);
+                    }
                 }
             }
         }
