@@ -23,7 +23,7 @@ class AlertManager {
     AlertManager(ClientRepo repo) {
         this.repo = repo;
 
-        schedule();
+        //schedule();
     }
 
     private void schedule() {
@@ -35,7 +35,7 @@ class AlertManager {
                         fetchEvents(client);
                     }
                 } catch (Exception e) {
-                    Logger.warning(e.getMessage());
+                    Logger.warning("schedule: error: %s", e);
                 }
             }
         }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
@@ -88,7 +88,7 @@ class AlertManager {
                         wireClient.sendText(msg);
                     }
                 } catch (Exception e) {
-                    Logger.warning(e.getLocalizedMessage());
+                    Logger.warning("scheduleReminder: %s error: %s", wireClient.getId(), e);
                 }
             }
         }, at);

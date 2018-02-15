@@ -24,18 +24,18 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.tools.Logger;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.assets.Picture;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
-import com.wire.bots.sdk.server.model.Member;
 import com.wire.bots.sdk.server.model.NewBot;
+import com.wire.bots.sdk.tools.Logger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -43,9 +43,16 @@ import java.util.concurrent.TimeUnit;
 public class MessageHandler extends MessageHandlerBase {
     private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
+    private final CallScheduler callScheduler;
 
     MessageHandler(ClientRepo repo) {
         new AlertManager(repo);
+        callScheduler = new CallScheduler(repo);
+        try {
+            callScheduler.loadSchedules();
+        } catch (Exception e) {
+            Logger.error("CallScheduler: %s", e);
+        }
     }
 
     @Override
@@ -54,14 +61,6 @@ public class MessageHandler extends MessageHandlerBase {
                 newBot.id,
                 newBot.origin.id);
 
-        for (Member member : newBot.conversation.members) {
-            if (member.service != null) {
-                Logger.warning("Rejecting NewBot. user: %s service: %s",
-                        newBot.origin.id,
-                        member.service.id);
-                return false; // we don't want to be in a conv if other bots are there.
-            }
-        }
         return true;
     }
 
@@ -69,7 +68,7 @@ public class MessageHandler extends MessageHandlerBase {
     public void onNewConversation(final WireClient client) {
         executor.execute(() -> {
             try {
-                showAuthLink(client);
+                //showAuthLink(client);
             } catch (Exception e) {
                 Logger.error("onNewConversation: %s", e.getMessage());
             }
@@ -79,7 +78,7 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onText(WireClient client, TextMessage msg) {
         try {
-            String text = msg.getText();
+            String text = msg.getText().toLowerCase();
 
             if (text.equalsIgnoreCase("/auth")) {
                 showAuthLink(client);
@@ -87,9 +86,30 @@ public class MessageHandler extends MessageHandlerBase {
                 showCalendar(client);
             } else if (text.startsWith("/cali")) {
                 scheduleNewEvent(client, text);
+            } else if (text.startsWith("@polly")) {
+                scheduleCall(client, text);
             }
         } catch (Exception e) {
             Logger.warning("onText: %s", e.getMessage());
+        }
+    }
+
+    private void scheduleCall(WireClient client, String text) throws Exception {
+        String botId = client.getId();
+        Date date = CallScheduler.parse(text);
+        if (date != null) {
+            SimpleDateFormat format = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
+            format.setTimeZone(TimeZone.getTimeZone("CET"));
+
+            boolean scheduled = callScheduler.schedule(botId, date);
+            if (scheduled) {
+                callScheduler.saveSchedule(botId, text);
+                client.sendText("OK, I will start the call here at: " + format.format(date));
+            } else {
+                client.sendText("I am sorry, but I could not schedule the call for: " + format.format(date));
+            }
+        } else {
+            client.sendText("I am sorry, I could not parse that.");
         }
     }
 
@@ -107,19 +127,21 @@ public class MessageHandler extends MessageHandlerBase {
     private void scheduleNewEvent(WireClient client, String text) throws Exception {
         try {
             Event event = CalendarAPI.addEvent(client.getId(), text);
-            if (event == null)
+            if (event == null) {
                 client.sendText("Sorry, I did not get that.");
-            else {
-                DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
-                DateTime dateTime = event.getStart().getDateTime();
-                long value = dateTime.getValue() + TimeUnit.MINUTES.toMillis(dateTime.getTimeZoneShift());
-                String s = String.format("I've created new event for you:\n" +
-                                "**%s** on %s\n%s",
-                        event.getSummary(),
-                        format.format(new Date(value)),
-                        event.getHtmlLink());
-                client.sendText(s);
+                return;
             }
+
+            DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+            DateTime dateTime = event.getStart().getDateTime();
+            long value = dateTime.getValue() + TimeUnit.MINUTES.toMillis(dateTime.getTimeZoneShift());
+            String s = String.format("I've created new event for you:\n" +
+                            "**%s** on %s\n%s",
+                    event.getSummary(),
+                    format.format(new Date(value)),
+                    event.getHtmlLink());
+            client.sendText(s);
+
         } catch (Exception e) {
             Logger.warning("scheduleNewEvent: %s", e.getMessage());
             client.sendText("Something went wrong :(. Try: /auth");
