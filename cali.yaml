@@ -8,5 +8,5 @@ server:
 
 auth: your_auth
 data: ./data
-secretPath: conf/client_secret.json
+secretPath: client-secret.json
 redirect: 'http://cali.services.zinfra.io/user/auth/google_oauth2/callback'

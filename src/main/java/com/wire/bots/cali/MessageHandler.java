@@ -23,6 +23,7 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
+import com.wire.blender.Blender;
 import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
@@ -44,8 +45,10 @@ public class MessageHandler extends MessageHandlerBase {
     private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
     private final CallScheduler callScheduler;
+    private final Blender blender;
 
-    MessageHandler(ClientRepo repo) {
+    MessageHandler(ClientRepo repo, Blender blender) {
+        this.blender = blender;
         new AlertManager(repo);
         callScheduler = new CallScheduler(repo);
         try {
@@ -73,6 +76,11 @@ public class MessageHandler extends MessageHandlerBase {
                 Logger.error("onNewConversation: %s", e.getMessage());
             }
         });
+    }
+
+    @Override
+    public void onCalling(WireClient client, String userId, String clientId, String content) {
+        blender.recvMessage(client.getId(), userId, clientId, content);
     }
 
     @Override
