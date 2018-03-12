@@ -28,6 +28,7 @@ import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.assets.Picture;
+import com.wire.bots.sdk.factories.StorageFactory;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 import com.wire.bots.sdk.server.model.NewBot;
@@ -45,10 +46,13 @@ public class MessageHandler extends MessageHandlerBase {
     private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
     private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
     private final CallScheduler callScheduler;
-    private final Blender blender;
+    private final ClientRepo repo;
+    private final StorageFactory storageFactory;
+    private Blender blender;
 
-    MessageHandler(ClientRepo repo, Blender blender) {
-        this.blender = blender;
+    MessageHandler(ClientRepo repo, StorageFactory storageFactory) {
+        this.repo = repo;
+        this.storageFactory = storageFactory;
         new AlertManager(repo);
         callScheduler = new CallScheduler(repo);
         try {
@@ -60,10 +64,11 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public boolean onNewBot(NewBot newBot) {
-        Logger.info("onNewBot: bot: %s, user: %s",
-                newBot.id,
-                newBot.origin.id);
+        Logger.info("onNewBot: bot: %s, user: %s", newBot.id, newBot.origin.id);
 
+        blender = new Blender();
+        blender.init("dummy-config", newBot.id, newBot.client);
+        blender.registerListener(new DuleListener(repo));
         return true;
     }
 
@@ -71,7 +76,7 @@ public class MessageHandler extends MessageHandlerBase {
     public void onNewConversation(final WireClient client) {
         executor.execute(() -> {
             try {
-                //showAuthLink(client);
+
             } catch (Exception e) {
                 Logger.error("onNewConversation: %s", e.getMessage());
             }

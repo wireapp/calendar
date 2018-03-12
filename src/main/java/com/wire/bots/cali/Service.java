@@ -18,7 +18,6 @@
 
 package com.wire.bots.cali;
 
-import com.wire.blender.Blender;
 import com.wire.bots.cryptonite.CryptoService;
 import com.wire.bots.cryptonite.StorageService;
 import com.wire.bots.cryptonite.client.CryptoClient;
@@ -43,11 +42,7 @@ public class Service extends Server<Config> {
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
-        Blender blender = new Blender();
-        blender.init("dummy-config");
-        blender.registerListener(new DuleListener(repo));
-
-        return new MessageHandler(repo, blender);
+        return new MessageHandler(repo, getStorageFactory(config));
     }
 
     @Override
