@@ -32,23 +32,22 @@ import com.wire.bots.sdk.factories.StorageFactory;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 import com.wire.bots.sdk.server.model.NewBot;
+import com.wire.bots.sdk.storage.Storage;
 import com.wire.bots.sdk.tools.Logger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class MessageHandler extends MessageHandlerBase {
     private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
-    private final ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(4);
     private final CallScheduler callScheduler;
     private final ClientRepo repo;
     private final StorageFactory storageFactory;
-    private Blender blender;
+    private ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
 
     MessageHandler(ClientRepo repo, StorageFactory storageFactory) {
         this.repo = repo;
@@ -65,26 +64,17 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public boolean onNewBot(NewBot newBot) {
         Logger.info("onNewBot: bot: %s, user: %s", newBot.id, newBot.origin.id);
-
-        blender = new Blender();
-        blender.init("dummy-config", newBot.id, newBot.client);
-        blender.registerListener(new DuleListener(repo));
         return true;
     }
 
     @Override
     public void onNewConversation(final WireClient client) {
-        executor.execute(() -> {
-            try {
 
-            } catch (Exception e) {
-                Logger.error("onNewConversation: %s", e.getMessage());
-            }
-        });
     }
 
     @Override
     public void onCalling(WireClient client, String userId, String clientId, String content) {
+        Blender blender = getBlender(client);
         blender.recvMessage(client.getId(), userId, clientId, content);
     }
 
@@ -200,4 +190,21 @@ public class MessageHandler extends MessageHandlerBase {
         preview.setAssetKey(assetKey.key);
         return preview;
     }
+
+    private Blender getBlender(WireClient client) {
+        return blenders.computeIfAbsent(client.getId(), k -> {
+            try {
+                Storage storage = storageFactory.create(client.getId());
+                NewBot state = storage.getState();
+                Blender blender = new Blender();
+                blender.init("echo", state.id, state.client);
+                blender.registerListener(new DuleListener(repo));
+                return blender;
+            } catch (Exception e) {
+                Logger.error(e.toString());
+                return null;
+            }
+        });
+    }
+
 }
