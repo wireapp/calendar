@@ -47,18 +47,19 @@ public class MessageHandler extends MessageHandlerBase {
     private final CallScheduler callScheduler;
     private final ClientRepo repo;
     private final StorageFactory storageFactory;
-    private ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
 
     MessageHandler(ClientRepo repo, StorageFactory storageFactory) {
         this.repo = repo;
         this.storageFactory = storageFactory;
-        new AlertManager(repo);
-        callScheduler = new CallScheduler(repo);
+        this.callScheduler = new CallScheduler(repo);
+
         try {
             callScheduler.loadSchedules();
         } catch (Exception e) {
             Logger.error("CallScheduler: %s", e);
         }
+        new AlertManager(repo);
     }
 
     @Override
@@ -198,7 +199,7 @@ public class MessageHandler extends MessageHandlerBase {
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
                 blender.init("echo", state.id, state.client);
-                blender.registerListener(new DuleListener(repo));
+                blender.registerListener(new DuleListener(repo, blender));
                 return blender;
             } catch (Exception e) {
                 Logger.error(e.toString());
@@ -206,5 +207,4 @@ public class MessageHandler extends MessageHandlerBase {
             }
         });
     }
-
 }
