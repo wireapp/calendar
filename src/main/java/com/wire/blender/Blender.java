@@ -1,7 +1,5 @@
 package com.wire.blender;
 
-import com.wire.bots.sdk.tools.Logger;
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -15,7 +13,6 @@ public class Blender {
     private final List<BlenderListener> listeners = new ArrayList<>();
 
     public void log(String msg) {
-        Logger.info("JAVA:Blender: %s", msg);
     }
 
     public void registerListener(BlenderListener listener) {
@@ -23,7 +20,7 @@ public class Blender {
     }
 
 
-    private void onConfigRequest(String id) {
+    private void onConfigRequest() {
         for (BlenderListener listener : listeners) {
             //listener.onConfigRequest(id);
         }
@@ -37,14 +34,15 @@ public class Blender {
                                   String peerClientId,
                                   String content,
                                   boolean trans) {
+	    
         for (BlenderListener listener : listeners) {
-            listener.onCallingMessage(id,
-                    userId,
-                    clientId,
-                    peerId,
-                    peerClientId,
-                    content,
-                    trans);
+		listener.onCallingMessage(id,
+					  userId,
+					  clientId,
+					  peerId,
+					  peerClientId,
+					  content,
+					  trans);
         }
     }
 
@@ -53,5 +51,6 @@ public class Blender {
     public native void recvMessage(String convId, String userId,
                                    String clientId, String content);
 
-    public native void init(String config, String userid, String clientid);
+    public native void init(String name, String userid, String clientid,
+			    String localAddr, int minPort, int maxPort);
 }
