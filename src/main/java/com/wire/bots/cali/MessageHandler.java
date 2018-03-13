@@ -197,12 +197,15 @@ public class MessageHandler extends MessageHandlerBase {
         return blenders.computeIfAbsent(botId, k -> {
             try {
                 String module = Service.CONFIG.getModule();
+                String ingress = Service.CONFIG.getIngress();
+                int portMin = Service.CONFIG.getPortMin();
+                int portMax = Service.CONFIG.getPortMax();
 
                 Storage storage = storageFactory.create(botId);
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
                 Logger.info("Initializing blender with: '%s', '%s', '%s'", module, botId, state.client);
-                blender.init(module, botId, state.client);
+                blender.init(module, botId, state.client, ingress, portMin, portMax);
                 blender.registerListener(new DuleListener(repo, blender));
                 return blender;
             } catch (Exception e) {
