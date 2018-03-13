@@ -75,8 +75,9 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public void onCalling(WireClient client, String userId, String clientId, String content) {
-        Blender blender = getBlender(client);
-        blender.recvMessage(client.getId(), userId, clientId, content);
+        String botId = client.getId();
+        Blender blender = getBlender(botId);
+        blender.recvMessage(botId, userId, clientId, content);
     }
 
     @Override
@@ -192,13 +193,13 @@ public class MessageHandler extends MessageHandlerBase {
         return preview;
     }
 
-    private Blender getBlender(WireClient client) {
-        return blenders.computeIfAbsent(client.getId(), k -> {
+    private Blender getBlender(String botId) {
+        return blenders.computeIfAbsent(botId, k -> {
             try {
-                Storage storage = storageFactory.create(client.getId());
+                Storage storage = storageFactory.create(botId);
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
-                blender.init("echo", state.id, state.client);
+                blender.init(Service.CONFIG.getModule(), state.id, state.client);
                 blender.registerListener(new DuleListener(repo, blender));
                 return blender;
             } catch (Exception e) {

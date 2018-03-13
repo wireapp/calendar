@@ -25,7 +25,7 @@ public class Blender {
 
     private void onConfigRequest(String id) {
         for (BlenderListener listener : listeners) {
-            listener.onConfigRequest(id);
+            //listener.onConfigRequest(id);
         }
     }
 

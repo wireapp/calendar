@@ -25,6 +25,10 @@ import com.wire.bots.sdk.Configuration;
 class Config extends Configuration {
     public String secretPath;
     public String redirect;
+    public String ingress;
+    public int portMin;
+    public int portMax;
+    public String module;
 
     public String getRedirect() {
         return redirect;
@@ -32,5 +36,21 @@ class Config extends Configuration {
 
     public String getSecretPath() {
         return secretPath;
+    }
+
+    public String getIngress() {
+        return ingress;
+    }
+
+    public int getPortMin() {
+        return portMin;
+    }
+
+    public int getPortMax() {
+        return portMax;
+    }
+
+    public String getModule() {
+        return module;
     }
 }
