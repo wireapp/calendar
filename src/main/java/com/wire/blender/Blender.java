@@ -23,7 +23,7 @@ public class Blender {
     }
 
 
-    private void onConfigRequest(String id) {
+    private void onConfigRequest() {
         for (BlenderListener listener : listeners) {
             //listener.onConfigRequest(id);
         }
@@ -53,5 +53,5 @@ public class Blender {
     public native void recvMessage(String convId, String userId,
                                    String clientId, String content);
 
-    public native void init(String config, String userid, String clientid);
+    public native void init(String config, String userId, String clientId);
 }

@@ -55,7 +55,7 @@ public class DuleListener implements BlenderListener {
 
                 WireClient wireClient = repo.getWireClient(id);
                 String config = "";
-                blender.recvConfig(config);
+                //blender.recvConfig(config);
             } catch (Exception e) {
                 Logger.error("onConfigRequest: %s", e);
             }

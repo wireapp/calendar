@@ -196,10 +196,13 @@ public class MessageHandler extends MessageHandlerBase {
     private Blender getBlender(String botId) {
         return blenders.computeIfAbsent(botId, k -> {
             try {
+                String module = Service.CONFIG.getModule();
+
                 Storage storage = storageFactory.create(botId);
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
-                blender.init(Service.CONFIG.getModule(), state.id, state.client);
+                Logger.info("Initializing blender with: '%s', '%s', '%s'", module, botId, state.client);
+                blender.init(module, botId, state.client);
                 blender.registerListener(new DuleListener(repo, blender));
                 return blender;
             } catch (Exception e) {
