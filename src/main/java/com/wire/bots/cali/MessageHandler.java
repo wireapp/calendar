@@ -204,9 +204,8 @@ public class MessageHandler extends MessageHandlerBase {
                 Storage storage = storageFactory.create(botId);
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
-                Logger.info("Initializing blender with: '%s', '%s', '%s'", module, botId, state.client);
                 blender.init(module, botId, state.client, ingress, portMin, portMax);
-                blender.registerListener(new DuleListener(repo, blender));
+                blender.registerListener(new CallListener(repo));
                 return blender;
             } catch (Exception e) {
                 Logger.error(e.toString());

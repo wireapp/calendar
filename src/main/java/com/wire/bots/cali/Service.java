@@ -37,6 +37,8 @@ public class Service extends Server<Config> {
     private CryptoClient cryptoClient;
 
     public static void main(String[] args) throws Exception {
+        System.loadLibrary("blender"); // Load native library at runtime
+
         new Service().run(args);
     }
 
