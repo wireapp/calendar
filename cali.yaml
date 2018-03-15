@@ -8,7 +8,7 @@ server:
 
 auth: your_auth
 data: ./data
-module: echo
+module: mixer
 ingress: 35.189.223.29
 portMin: 32768
 portMax: 32867
