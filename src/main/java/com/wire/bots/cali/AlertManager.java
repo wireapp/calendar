@@ -23,22 +23,28 @@ class AlertManager {
     AlertManager(ClientRepo repo) {
         this.repo = repo;
 
-        //schedule();
+        crone();
     }
 
-    private void schedule() {
+    private void crone() {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 try {
-                    for (WireClient client : repo.listClients()) {
-                        fetchEvents(client);
+                    ArrayList<String> subscribers = getSubscribers();
+                    for (String botId : subscribers) {
+                        WireClient wireClient = repo.getWireClient(botId);
+                        fetchEvents(wireClient);
                     }
                 } catch (Exception e) {
-                    Logger.warning("schedule: error: %s", e);
+                    Logger.warning("crone: error: %s", e);
                 }
             }
         }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
+    }
+
+    private ArrayList<String> getSubscribers() {
+        return new ArrayList<>(); //todo add DB call here
     }
 
     private void fetchEvents(final WireClient wireClient) {

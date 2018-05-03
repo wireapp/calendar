@@ -2,8 +2,6 @@ package com.wire.bots.cali;
 
 import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.WireClient;
-import com.wire.bots.sdk.factories.StorageFactory;
-import com.wire.bots.sdk.storage.Storage;
 import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
@@ -12,21 +10,18 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class CallScheduler {
-    private static final String CALL_SCHEDULE_FILENAME = "call.schedule";
     private final ClientRepo repo;
     private final Timer timer = new Timer();
     private static final PrettyTimeParser prettyTimeParser = new PrettyTimeParser(TimeZone.getTimeZone("CET"));
 
-    public CallScheduler(ClientRepo repo) {
+    CallScheduler(ClientRepo repo) {
         this.repo = repo;
     }
 
-    public void loadSchedules() throws Exception {
-        StorageFactory storageFactory = repo.getStorageFactory();
-        for (WireClient client : repo.listClients()) {
-            final String botId = client.getId();
-            Storage storage = storageFactory.create(botId);
-            String schedule = storage.readFile(CALL_SCHEDULE_FILENAME);
+    void loadSchedules() throws Exception {
+        ArrayList<String> subscribers = getSubscribers();
+        for (String botId : subscribers) {
+            String schedule = getSchedule(botId);
             if (schedule != null) {
                 Date date = parse(schedule);
                 if (date != null) {
@@ -39,7 +34,15 @@ public class CallScheduler {
         }
     }
 
-    public boolean schedule(String botId, Date date) {
+    private String getSchedule(String botId) {
+        return null; //todo add DB call here
+    }
+
+    private ArrayList<String> getSubscribers() {
+        return new ArrayList<>(); //todo add DB call here
+    }
+
+    boolean schedule(String botId, Date date) {
         if (date.getTime() < new Date().getTime())
             return false;
 
@@ -63,8 +66,7 @@ public class CallScheduler {
     }
 
     private void deleteSchedule(String botId) throws Exception {
-        Storage storage = repo.getStorageFactory().create(botId);
-        storage.deleteFile(CALL_SCHEDULE_FILENAME);
+        //todo DB call
         Logger.info("Deleted schedule for bot: %s", botId);
     }
 
@@ -90,8 +92,7 @@ public class CallScheduler {
         return true;
     }
 
-
-    public static Date parse(String schedule) {
+    static Date parse(String schedule) {
         List<DateGroup> dateGroups = prettyTimeParser.parseSyntax(schedule);
         for (DateGroup dateGroup : dateGroups) {
             for (Date date : dateGroup.getDates()) {
@@ -101,9 +102,7 @@ public class CallScheduler {
         return null;
     }
 
-    public void saveSchedule(String botId, String text) throws Exception {
-        StorageFactory storageFactory = repo.getStorageFactory();
-        Storage storage = storageFactory.create(botId);
-        storage.saveFile(CALL_SCHEDULE_FILENAME, text);
+    void saveSchedule(String botId, String text) throws Exception {
+        //todo DB call
     }
 }

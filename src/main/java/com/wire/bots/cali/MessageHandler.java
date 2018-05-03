@@ -32,7 +32,7 @@ import com.wire.bots.sdk.factories.StorageFactory;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 import com.wire.bots.sdk.server.model.NewBot;
-import com.wire.bots.sdk.storage.Storage;
+import com.wire.bots.sdk.state.State;
 import com.wire.bots.sdk.tools.Logger;
 
 import java.text.DateFormat;
@@ -201,7 +201,7 @@ public class MessageHandler extends MessageHandlerBase {
                 int portMin = Service.CONFIG.getPortMin();
                 int portMax = Service.CONFIG.getPortMax();
 
-                Storage storage = storageFactory.create(botId);
+                State storage = storageFactory.create(botId);
                 NewBot state = storage.getState();
                 Blender blender = new Blender();
                 blender.init(module, botId, state.client, ingress, portMin, portMax);

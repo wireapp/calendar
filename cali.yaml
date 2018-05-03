@@ -7,10 +7,13 @@ server:
       appenders: []
 
 auth: your_auth
-data: ./data
+db:
+    host: localhost
+    port: 6379
+    
 module: mixer
 ingress: 35.189.223.29
 portMin: 32768
 portMax: 32867
 secretPath: client-secret.json
-redirect: 'http://cali.services.zinfra.io/user/auth/google_oauth2/callback'
+redirect: 'https://services.zinfra.io/cali/user/auth/google_oauth2/callback'

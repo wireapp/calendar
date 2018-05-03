@@ -18,27 +18,20 @@
 
 package com.wire.bots.cali;
 
-import com.wire.bots.cryptonite.CryptoService;
-import com.wire.bots.cryptonite.StorageService;
-import com.wire.bots.cryptonite.client.CryptoClient;
-import com.wire.bots.cryptonite.client.StorageClient;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
+import com.wire.bots.sdk.crypto.CryptoDatabase;
+import com.wire.bots.sdk.crypto.storage.RedisStorage;
 import com.wire.bots.sdk.factories.CryptoFactory;
 import com.wire.bots.sdk.factories.StorageFactory;
+import com.wire.bots.sdk.state.RedisState;
 import io.dropwizard.setup.Environment;
 
-import java.net.URI;
-
 public class Service extends Server<Config> {
-    private static final String SERVICE = "cali";
     static Config CONFIG;
-    private StorageClient storageClient;
-    private CryptoClient cryptoClient;
 
     public static void main(String[] args) throws Exception {
         System.loadLibrary("blender"); // Load native library at runtime
-
         new Service().run(args);
     }
 
@@ -50,8 +43,7 @@ public class Service extends Server<Config> {
     @Override
     protected void initialize(Config config, Environment env) throws Exception {
         CONFIG = config;
-        storageClient = new StorageClient(SERVICE, new URI(config.data));
-        cryptoClient = new CryptoClient(SERVICE, new URI(config.data));
+       env.jersey().setUrlPattern("/cali/*");
     }
 
     @Override
@@ -61,11 +53,14 @@ public class Service extends Server<Config> {
 
     @Override
     protected StorageFactory getStorageFactory(Config config) {
-        return botId -> new StorageService(botId, storageClient);
+        return botId -> new RedisState(botId, config.db);
     }
 
     @Override
     protected CryptoFactory getCryptoFactory(Config config) {
-        return (botId) -> new CryptoService(botId, cryptoClient);
+        return (botId) -> new CryptoDatabase(botId, new RedisStorage(
+                config.db.host,
+                config.db.port,
+                config.db.password));
     }
 }
