@@ -95,8 +95,8 @@ public class MessageHandler extends MessageHandlerBase {
             } else if (text.equalsIgnoreCase("/list")) {
                 showCalendar(client);
             } else if (text.startsWith("/cali")) {
-                scheduleNewEvent(client, text);
-            } else if (text.startsWith("@polly")) {
+                scheduleNewEvent(client, text.replace("/cali", "").trim());
+            } else if (text.startsWith("/polly")) {
                 scheduleCall(client, text);
             }
         } catch (Exception e) {

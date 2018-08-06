@@ -153,7 +153,7 @@ class CalendarAPI {
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = flows.get(botId);
         if (flow == null) {
-            DbDataStoreFactory factory = new DbDataStoreFactory(Service.CONFIG.db, botId);   //todo Check if we need botId as id
+            DbDataStoreFactory factory = new DbDataStoreFactory(Service.CONFIG.db, botId);
 
             flow = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
