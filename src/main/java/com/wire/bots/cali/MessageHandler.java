@@ -70,7 +70,12 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public void onNewConversation(final WireClient client) {
-
+        try {
+            client.sendText("Hey, I just met you and this is crazy\n" +
+                    "But here's my number, so call me maybe");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

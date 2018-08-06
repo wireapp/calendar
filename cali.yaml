@@ -12,7 +12,7 @@ db:
     port: 6379
     
 module: mixer
-ingress: 35.189.223.29
+ingress: localhost
 portMin: 32768
 portMax: 32867
 secretPath: client-secret.json
