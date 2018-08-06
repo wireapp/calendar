@@ -16,4 +16,4 @@ ingress: localhost
 portMin: 32768
 portMax: 32867
 secretPath: client-secret.json
-redirect: 'https://services.zinfra.io/cali/user/auth/google_oauth2/callback'
+redirect: 'localhost:8080/cali/user/auth/google_oauth2/callback'

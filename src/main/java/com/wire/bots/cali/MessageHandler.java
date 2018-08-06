@@ -71,8 +71,8 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onNewConversation(final WireClient client) {
         try {
-            client.sendText("Hey, I just met you and this is crazy\n" +
-                    "But here's my number, so call me maybe");
+            //client.sendText("Hey, I just met you and this is crazy\nBut here's my number, so call me maybe");
+            showAuthLink(client);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -131,7 +131,7 @@ public class MessageHandler extends MessageHandlerBase {
             Picture preview = uploadPreview(client);
             client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
         } catch (Exception e) {
-            Logger.warning("showAuthLink: %s", e.getMessage());
+            e.printStackTrace();
             client.sendText("Something went wrong :(. Try: /auth");
         }
     }

@@ -10,13 +10,13 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
-import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
+import com.wire.bots.cali.utils.DbDataStoreFactory;
 import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
@@ -42,6 +42,10 @@ class CalendarAPI {
             Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", Pattern.CASE_INSENSITIVE);
 
     static {
+        File secret = new File(Service.CONFIG.getSecretPath());
+        if (!secret.exists())
+            Logger.warning(secret.getAbsolutePath() + " does not exist");
+
         try (InputStream in = new FileInputStream(Service.CONFIG.getSecretPath())) {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -149,8 +153,7 @@ class CalendarAPI {
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = flows.get(botId);
         if (flow == null) {
-            File dataDir = new File(Service.CONFIG.data, "/.credentials/cali/" + botId);
-            FileDataStoreFactory factory = new FileDataStoreFactory(dataDir);
+            DbDataStoreFactory factory = new DbDataStoreFactory(Service.CONFIG.db, botId);   //todo Check if we need botId as id
 
             flow = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)

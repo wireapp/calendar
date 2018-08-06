@@ -41,9 +41,9 @@ public class Service extends Server<Config> {
     }
 
     @Override
-    protected void initialize(Config config, Environment env) throws Exception {
+    protected void initialize(Config config, Environment env) {
         CONFIG = config;
-       env.jersey().setUrlPattern("/cali/*");
+        env.jersey().setUrlPattern("/cali/*");
     }
 
     @Override
