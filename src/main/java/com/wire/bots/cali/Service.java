@@ -18,6 +18,8 @@
 
 package com.wire.bots.cali;
 
+import com.wire.bots.cali.resources.AuthResource;
+import com.wire.bots.cali.resources.NotificationResource;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
 import com.wire.bots.sdk.crypto.CryptoDatabase;
@@ -49,6 +51,7 @@ public class Service extends Server<Config> {
     @Override
     protected void onRun(Config config, Environment env) {
         addResource(new AuthResource(repo), env);
+        addResource(new NotificationResource(repo), env);
     }
 
     @Override

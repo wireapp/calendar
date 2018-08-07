@@ -113,7 +113,7 @@ public class MessageHandler extends MessageHandlerBase {
             if (text.equalsIgnoreCase("/auth")) {
                 showAuthLink(client);
             } else if (text.equalsIgnoreCase("/list")) {
-                showCalendar(client);
+                listEvents(client);
             } else if (text.startsWith("/cali")) {
                 scheduleNewEvent(client, text.replace("/cali", "").trim());
             } else if (text.startsWith("/polly")) {
@@ -181,7 +181,7 @@ public class MessageHandler extends MessageHandlerBase {
         }
     }
 
-    private void showCalendar(WireClient client) throws Exception {
+    private void listEvents(WireClient client) throws Exception {
         try {
             DateTime now = new DateTime(System.currentTimeMillis());
             DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
@@ -204,7 +204,7 @@ public class MessageHandler extends MessageHandlerBase {
             }
             client.sendText(sb.toString());
         } catch (Exception e) {
-            Logger.warning("showCalendar: %s", e.getMessage());
+            Logger.warning("listEvents: %s", e.getMessage());
             client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
                     "to your Google account");
         }

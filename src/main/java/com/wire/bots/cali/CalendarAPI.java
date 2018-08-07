@@ -12,10 +12,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
-import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventAttendee;
-import com.google.api.services.calendar.model.EventDateTime;
-import com.google.api.services.calendar.model.Events;
+import com.google.api.services.calendar.model.*;
 import com.wire.bots.cali.utils.DbDataStoreFactory;
 import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
@@ -31,9 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class CalendarAPI {
+public class CalendarAPI {
     private static final String APPLICATION_NAME = "Wire Cali Bot";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR);
     private static GoogleClientSecrets clientSecrets;
@@ -62,7 +60,7 @@ class CalendarAPI {
                 .build();
     }
 
-    static Credential processAuthCode(String botId, String code) throws IOException {
+    public static Credential processAuthCode(String botId, String code) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleTokenResponse response = flow.newTokenRequest(code)
                 .setRedirectUri(Service.CONFIG.getRedirect())
@@ -108,7 +106,7 @@ class CalendarAPI {
 
         event = getCalendarService(botId)
                 .events()
-                .insert("primary", event)
+                .insert(CALENDAR_ID, event)
                 .setSendNotifications(true)
                 .execute();
 
@@ -119,6 +117,20 @@ class CalendarAPI {
 //                event.getStart().getDateTime().toString());
 
         return event;
+    }
+
+    public static Channel watch(String botId) throws IOException {
+        Channel channel = new Channel();
+        channel.setId(botId);
+        channel.setKind("api#channel");
+        channel.setType("web_hook");
+        channel.setAddress("https://services.wire.com/cali/notifications");
+
+        Calendar.Events.Watch watch = getCalendarService(botId)
+                .events()
+                .watch(CALENDAR_ID, channel);
+
+        return watch.execute();
     }
 
     private static String extractSummary(String line, String dates, List<EventAttendee> attendees) {
@@ -142,11 +154,11 @@ class CalendarAPI {
         return ret;
     }
 
-    static Event getEvent(String botId, String eventId) throws IOException {
-        Calendar service = CalendarAPI.getCalendarService(botId);
+    public static Event getEvent(String botId, String eventId) throws IOException {
+        Calendar service = getCalendarService(botId);
         return service
                 .events()
-                .get("primary", eventId)
+                .get(CALENDAR_ID, eventId)
                 .execute();
     }
 
@@ -170,7 +182,7 @@ class CalendarAPI {
     private static int getTimeZoneShift(String botId) {
         try {
             Calendar service = getCalendarService(botId);
-            Events events = service.events().list("primary")
+            Events events = service.events().list(CALENDAR_ID)
                     .setMaxResults(1)
                     .setTimeMin(new DateTime(System.currentTimeMillis()))
                     .setOrderBy("startTime")
@@ -193,5 +205,10 @@ class CalendarAPI {
             ret.add(matcher.group());
         }
         return ret;
+    }
+
+    public static Events getChanges(String botId, String syncToken) throws IOException {
+        return getCalendarService(botId).events().list(CALENDAR_ID)
+                .setSyncToken(syncToken).execute();
     }
 }

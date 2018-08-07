@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.wire.bots.sdk.Configuration;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class Config extends Configuration {
+public class Config extends Configuration {
     public String secretPath;
     public String redirect;
     public String ingress;

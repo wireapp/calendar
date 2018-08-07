@@ -1,9 +1,11 @@
-package com.wire.bots.cali;
+package com.wire.bots.cali.resources;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.services.calendar.model.Channel;
+import com.wire.bots.cali.CalendarAPI;
 import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.tools.Logger;
 import com.wire.bots.sdk.WireClient;
+import com.wire.bots.sdk.tools.Logger;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -15,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 public class AuthResource {
     private final ClientRepo repo;
 
-    AuthResource(ClientRepo repo) {
+    public AuthResource(ClientRepo repo) {
         this.repo = repo;
     }
 
@@ -25,6 +27,14 @@ public class AuthResource {
 
         try {
             Credential credential = CalendarAPI.processAuthCode(bot, code);
+
+            try {
+                Channel channel = CalendarAPI.watch(bot);
+                Logger.info("New channel: %s", channel.getId());
+            } catch (Exception e) {
+                e.printStackTrace();
+                Logger.error("AuthResource: %s %s", bot, e);
+            }
 
             Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
                     bot,
@@ -50,7 +60,7 @@ public class AuthResource {
                     status(200).
                     build();
         } catch (Exception e) {
-            Logger.error("Auth: %s %s", bot, e);
+            Logger.error("AuthResource: %s %s", bot, e);
             e.printStackTrace();
             return Response.
                     status(500).
