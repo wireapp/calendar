@@ -21,34 +21,40 @@ public class AuthResource {
 
     @GET
     public Response auth(@QueryParam("state") final String bot,
-                         @QueryParam("code") final String code) throws Exception {
+                         @QueryParam("code") final String code) {
 
-        Credential credential = CalendarAPI.processAuthCode(bot, code);
+        try {
+            Credential credential = CalendarAPI.processAuthCode(bot, code);
 
-        Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
-                bot,
-                credential.getAccessToken() != null,
-                credential.getRefreshToken() != null,
-                TimeUnit.SECONDS.toMinutes(credential.getExpiresInSeconds())
-        );
+            Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
+                    bot,
+                    credential.getAccessToken() != null,
+                    credential.getRefreshToken() != null,
+                    TimeUnit.SECONDS.toMinutes(credential.getExpiresInSeconds())
+            );
 
-        WireClient wireClient = repo.getWireClient(bot);
-        if (wireClient != null) {
-            String msg = "Cool! You can schedule a meeting now just by simply writing:\n" +
-                    "/cali Dinner tomorrow at 2pm with bob@email.com\n" +
-                    "or\n" +
-                    "/cali Fishing every Tuesday at 4am till noon\n" +
-                    "or\n" +
-                    "/cali June 13 at 14:45 Dentist :(\n" +
-                    "I will remind you on time too ;)\n" +
-                    "You can list upcoming events by typing: `/list`";
+            WireClient wireClient = repo.getWireClient(bot);
+            if (wireClient != null) {
+                String msg = "Cool! You can schedule a meeting now just by simply writing:\n" +
+                        "/cali Dinner tomorrow at 2pm with bob@email.com\n" +
+                        "or\n" +
+                        "/cali June 13 at 14:45 Dentist :(\n" +
+                        "I will remind you on time too ;)\n" +
+                        "You can list upcoming events by typing: `/list`";
 
-            wireClient.sendText(msg);
+                wireClient.sendText(msg);
+            }
+
+            return Response.
+                    ok("Thank you! You can enjoy Cali now.").
+                    status(200).
+                    build();
+        } catch (Exception e) {
+            Logger.error("Auth: %s %s", bot, e);
+            e.printStackTrace();
+            return Response.
+                    status(500).
+                    build();
         }
-
-        return Response.
-                ok("Thank you! You can enjoy Cali now.").
-                status(200).
-                build();
     }
 }

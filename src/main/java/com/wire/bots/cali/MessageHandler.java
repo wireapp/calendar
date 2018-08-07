@@ -32,11 +32,14 @@ import com.wire.bots.sdk.factories.StorageFactory;
 import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.models.TextMessage;
 import com.wire.bots.sdk.server.model.NewBot;
+import com.wire.bots.sdk.server.model.User;
 import com.wire.bots.sdk.state.State;
 import com.wire.bots.sdk.tools.Logger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,23 +51,30 @@ public class MessageHandler extends MessageHandlerBase {
     private final ClientRepo repo;
     private final StorageFactory storageFactory;
     private final ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
+    private final AlertManager alertManager;
 
     MessageHandler(ClientRepo repo, StorageFactory storageFactory) {
         this.repo = repo;
         this.storageFactory = storageFactory;
-        this.callScheduler = new CallScheduler(repo);
+        this.callScheduler = new CallScheduler(Service.CONFIG.postgres, repo);
+        this.alertManager = new AlertManager(Service.CONFIG.postgres, repo);
 
         try {
             callScheduler.loadSchedules();
         } catch (Exception e) {
             Logger.error("CallScheduler: %s", e);
         }
-        new AlertManager(repo);
     }
 
     @Override
     public boolean onNewBot(NewBot newBot) {
-        Logger.info("onNewBot: bot: %s, user: %s", newBot.id, newBot.origin.id);
+        try {
+            boolean insertNewSubscriber = alertManager.insertNewSubscriber(newBot.id);
+            Logger.info("onNewBot: bot: %s, user: %s %s", newBot.id, newBot.origin.id, insertNewSubscriber);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Logger.error("onNewBot: bot: %s, error: %s", newBot.id, e);
+        }
         return true;
     }
 
@@ -75,6 +85,16 @@ public class MessageHandler extends MessageHandlerBase {
             showAuthLink(client);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onBotRemoved(String botId) {
+        try {
+            boolean remove = alertManager.removeSubscriber(botId);
+            Logger.info("onBotRemoved. Bot: %s %s", botId, remove);
+        } catch (Exception e) {
+            Logger.error(e.getMessage());
         }
     }
 
@@ -130,6 +150,8 @@ public class MessageHandler extends MessageHandlerBase {
             String authUrl = CalendarAPI.getAuthUrl(client.getId());
             Picture preview = uploadPreview(client);
             client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
+            //String origin = getOwner(client).id;
+            //client.sendDirectText(String.format("[authenticate](%s)", authUrl), origin);
         } catch (Exception e) {
             e.printStackTrace();
             client.sendText("Something went wrong :(. Try: /auth");
@@ -153,7 +175,6 @@ public class MessageHandler extends MessageHandlerBase {
                     format.format(new Date(value)),
                     event.getHtmlLink());
             client.sendText(s);
-
         } catch (Exception e) {
             Logger.warning("scheduleNewEvent: %s", e.getMessage());
             client.sendText("Something went wrong :(. Try: /auth");
@@ -217,5 +238,12 @@ public class MessageHandler extends MessageHandlerBase {
                 return null;
             }
         });
+    }
+
+    private User getOwner(WireClient client) throws Exception {
+        String botId = client.getId();
+        NewBot state = storageFactory.create(botId).getState();
+        Collection<User> users = client.getUsers(Collections.singletonList(state.origin.id));
+        return users.stream().findFirst().get();
     }
 }

@@ -9,6 +9,7 @@ import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.tools.Logger;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -19,11 +20,17 @@ class AlertManager {
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
     private final ClientRepo repo;
+    private final Database database;
 
-    AlertManager(ClientRepo repo) {
+    AlertManager(Config.DB postgres, ClientRepo repo) {
         this.repo = repo;
+        this.database = new Database(postgres);
 
         crone();
+    }
+
+    boolean insertNewSubscriber(String botId) throws Exception {
+       return database.insertSubscriber(botId);
     }
 
     private void crone() {
@@ -31,7 +38,7 @@ class AlertManager {
             @Override
             public void run() {
                 try {
-                    ArrayList<String> subscribers = getSubscribers();
+                    ArrayList<String> subscribers = database.getSubscribers();
                     for (String botId : subscribers) {
                         WireClient wireClient = repo.getWireClient(botId);
                         fetchEvents(wireClient);
@@ -41,10 +48,6 @@ class AlertManager {
                 }
             }
         }, TimeUnit.MINUTES.toMillis(1), TimeUnit.MINUTES.toMillis(PERIOD));
-    }
-
-    private ArrayList<String> getSubscribers() {
-        return new ArrayList<>(); //todo add DB call here
     }
 
     private void fetchEvents(final WireClient wireClient) {
@@ -98,5 +101,9 @@ class AlertManager {
                 }
             }
         }, at);
+    }
+
+    boolean removeSubscriber(String botId) throws SQLException {
+        return database.unsubscribe(botId);
     }
 }

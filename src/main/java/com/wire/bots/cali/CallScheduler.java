@@ -13,15 +13,17 @@ public class CallScheduler {
     private final ClientRepo repo;
     private final Timer timer = new Timer();
     private static final PrettyTimeParser prettyTimeParser = new PrettyTimeParser(TimeZone.getTimeZone("CET"));
+    private final Database database;
 
-    CallScheduler(ClientRepo repo) {
+    CallScheduler(Config.DB postgres, ClientRepo repo) {
         this.repo = repo;
+        this.database = new Database(postgres);
     }
 
     void loadSchedules() throws Exception {
-        ArrayList<String> subscribers = getSubscribers();
+        ArrayList<String> subscribers = database.getSubscribers();
         for (String botId : subscribers) {
-            String schedule = getSchedule(botId);
+            String schedule = database.getSchedule(botId);
             if (schedule != null) {
                 Date date = parse(schedule);
                 if (date != null) {
@@ -32,14 +34,6 @@ public class CallScheduler {
                 }
             }
         }
-    }
-
-    private String getSchedule(String botId) {
-        return null; //todo add DB call here
-    }
-
-    private ArrayList<String> getSubscribers() {
-        return new ArrayList<>(); //todo add DB call here
     }
 
     boolean schedule(String botId, Date date) {
@@ -66,8 +60,8 @@ public class CallScheduler {
     }
 
     private void deleteSchedule(String botId) throws Exception {
-        //todo DB call
-        Logger.info("Deleted schedule for bot: %s", botId);
+        boolean deleteSchedule = database.deleteSchedule(botId);
+        Logger.info("Deleted schedule for bot: %s %s", botId, deleteSchedule);
     }
 
     public boolean scheduleRecurrent(String botId, Date firstRun, int days) {
@@ -103,6 +97,7 @@ public class CallScheduler {
     }
 
     void saveSchedule(String botId, String text) throws Exception {
-        //todo DB call
+        boolean setSchedule = database.setSchedule(botId, text);
+        Logger.info("Set schedule for bot: %s %s", botId, setSchedule);
     }
 }

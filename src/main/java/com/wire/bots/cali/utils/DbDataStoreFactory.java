@@ -20,7 +20,6 @@ import com.google.api.client.util.Maps;
 import com.google.api.client.util.store.AbstractDataStoreFactory;
 import com.google.api.client.util.store.DataStore;
 import com.wire.bots.sdk.Configuration;
-import com.wire.bots.sdk.tools.Logger;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -76,11 +75,11 @@ public class DbDataStoreFactory extends AbstractDataStoreFactory {
             if (value == null) {
                 keyValueMap = Maps.newHashMap();
                 // save the credentials
-                Logger.info("Saving credentials for %s", id);
+                //Logger.info("Saving credentials for %s", id);
                 save();
             } else {
                 // load credentials
-                Logger.info("Loading credentials for %s", id);
+                //Logger.info("Loading credentials for %s", id);
                 keyValueMap = objectMapper.readValue(value, new TypeReference<HashMap<String, byte[]>>() {
                 });
             }
