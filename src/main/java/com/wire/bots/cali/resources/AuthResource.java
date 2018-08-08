@@ -52,16 +52,16 @@ public class AuthResource {
                         "I will remind you on time too ;)\n" +
                         "You can list upcoming events by typing: `/list`";
 
-                wireClient.sendText(msg);
+                //wireClient.sendText(msg);
             }
 
             return Response.
-                    ok("Thank you! You can enjoy Cali now.").
+                    ok("Thank you!").
                     status(200).
                     build();
         } catch (Exception e) {
             Logger.error("AuthResource: %s %s", bot, e);
-            e.printStackTrace();
+           // e.printStackTrace();
             return Response.
                     status(500).
                     build();

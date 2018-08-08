@@ -54,7 +54,7 @@ public class NotificationResource {
                     build();
         } catch (Exception e) {
             Logger.error("NotificationResource: %s %s", bot, e);
-            e.printStackTrace();
+            //e.printStackTrace();
             return Response.
                     status(500).
                     build();
