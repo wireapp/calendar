@@ -67,6 +67,11 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
+    public String getName(NewBot newBot) {
+        return String.format("%s's Google Calendar", newBot.origin.name);
+    }
+
+    @Override
     public boolean onNewBot(NewBot newBot) {
         try {
             boolean insertNewSubscriber = alertManager.insertNewSubscriber(newBot.id);
@@ -147,13 +152,13 @@ public class MessageHandler extends MessageHandlerBase {
 
     private void showAuthLink(WireClient client) throws Exception {
         try {
+            String origin = getOwner(client).id;
+
             String authUrl = CalendarAPI.getAuthUrl(client.getId());
             Picture preview = uploadPreview(client);
-            client.sendLinkPreview(authUrl, "Sign in - Google Accounts", preview);
-            //String origin = getOwner(client).id;
-            //client.sendDirectText(String.format("[authenticate](%s)", authUrl), origin);
+            client.sendDirectLinkPreview(authUrl, "Sign in - Google Accounts", preview, origin);
         } catch (Exception e) {
-            e.printStackTrace();
+            Logger.error("showAuthLink: bot: %s error: %s", client.getId(), e);
             client.sendText("Something went wrong :(. Try: /auth");
         }
     }
