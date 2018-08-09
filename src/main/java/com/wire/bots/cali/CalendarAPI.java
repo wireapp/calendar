@@ -152,11 +152,22 @@ public class CalendarAPI {
         return ret;
     }
 
-    public static Event getEvent(String botId, String eventId) throws IOException {
+    static Event getEvent(String botId, String eventId) throws IOException {
         Calendar service = getCalendarService(botId);
         return service
                 .events()
                 .get(CALENDAR_ID, eventId)
+                .execute();
+    }
+
+    static Events listEvents(String botId, int maxResults) throws IOException {
+        Calendar service = getCalendarService(botId);
+        DateTime now = new DateTime(System.currentTimeMillis());
+        return service.events().list("primary")
+                .setMaxResults(maxResults)
+                .setTimeMin(now)
+                .setOrderBy("startTime")
+                .setSingleEvents(true)
                 .execute();
     }
 

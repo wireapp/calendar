@@ -19,7 +19,6 @@
 package com.wire.bots.cali;
 
 import com.google.api.client.util.DateTime;
-import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
@@ -188,17 +187,11 @@ public class MessageHandler extends MessageHandlerBase {
 
     private void listEvents(WireClient client) throws Exception {
         try {
-            DateTime now = new DateTime(System.currentTimeMillis());
-            DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+            final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+            final StringBuilder sb = new StringBuilder("Upcoming events:\n");
 
-            Calendar service = CalendarAPI.getCalendarService(client.getId());
-            StringBuilder sb = new StringBuilder("Upcoming events:\n");
-            Events events = service.events().list("primary")
-                    .setMaxResults(5)
-                    .setTimeMin(now)
-                    .setOrderBy("startTime")
-                    .setSingleEvents(true)
-                    .execute();
+            final Events events = CalendarAPI.listEvents(client.getId(), 5);
+
             for (Event event : events.getItems()) {
                 EventDateTime eventStart = event.getStart();
                 DateTime start = eventStart.getDateTime();
