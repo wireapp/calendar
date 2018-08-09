@@ -14,9 +14,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 class AlertManager {
-    private static final int REMIND_IN = 16;
-    private static final int PERIOD = 5;
-
+    private static final int PERIOD = 1;
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
     private final ClientRepo repo;
@@ -57,21 +55,19 @@ class AlertManager {
     private void fetchEvents(final WireClient wireClient) {
         try {
             String botId = wireClient.getId();
-            Events events = CalendarAPI.listEvents(botId, 3);
+            Events events = CalendarAPI.listEvents(botId, 1);
 
             for (final Event event : events.getItems()) {
                 try {
-                    String id = String.format("%s-%s", botId, event.getId());
-                    if (remindersMap.put(id, event) == null) {
-                        Event.Reminders reminders = event.getReminders();
-                        if (reminders.getOverrides() == null) {
-                            for (EventReminder reminder : events.getDefaultReminders()) {
-                                scheduleReminder(wireClient, event, reminder.getMinutes());
-                            }
-                        } else {
-                            for (EventReminder reminder : reminders.getOverrides()) {
-                                scheduleReminder(wireClient, event, reminder.getMinutes());
-                            }
+                    Event.Reminders reminders = event.getReminders();
+                    int i = 0;
+                    if (reminders.getOverrides() == null) {
+                        for (EventReminder reminder : events.getDefaultReminders()) {
+                            scheduleReminder(wireClient, event, reminder, i++);
+                        }
+                    } else {
+                        for (EventReminder reminder : reminders.getOverrides()) {
+                            scheduleReminder(wireClient, event, reminder, i++);
                         }
                     }
                 } catch (Exception e) {
@@ -83,10 +79,14 @@ class AlertManager {
         }
     }
 
-    private boolean scheduleReminder(WireClient wireClient, Event event, int remindIn) {
+    private boolean scheduleReminder(WireClient wireClient, Event event, EventReminder reminder, int i) {
+        String id = String.format("%s-%s-%d", wireClient.getId(), event.getId(), i);
+        if (remindersMap.put(id, event) != null)
+            return false;
+
         final DateTime start = event.getStart().getDateTime();
         if (start != null) {
-            Date at = new Date(start.getValue() - TimeUnit.MINUTES.toMillis(remindIn));
+            Date at = new Date(start.getValue() - TimeUnit.MINUTES.toMillis(reminder.getMinutes()));
             if (at.getTime() > System.currentTimeMillis()) {
                 scheduleReminder(wireClient, at, event.getId());
                 return true;
