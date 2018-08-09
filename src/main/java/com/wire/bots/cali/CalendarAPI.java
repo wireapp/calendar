@@ -220,4 +220,10 @@ public class CalendarAPI {
         return getCalendarService(botId).events().list(CALENDAR_ID)
                 .setSyncToken(syncToken).execute();
     }
+
+    public static void stop(String botId, String channelId) throws IOException {
+        Channel channel = new Channel();
+        channel.setResourceId(channelId);
+        getCalendarService(botId).channels().stop(channel).execute();
+    }
 }

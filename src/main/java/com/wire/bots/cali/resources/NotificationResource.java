@@ -1,5 +1,6 @@
 package com.wire.bots.cali.resources;
 
+import com.wire.bots.cali.CalendarAPI;
 import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.tools.Logger;
@@ -33,6 +34,7 @@ public class NotificationResource {
 
             if (wireClient == null) {
                 Logger.info("NotificationResource: %s missing wire client", bot);
+                CalendarAPI.stop(bot, resourceId);
                 return Response.
                         status(410).
                         build();
