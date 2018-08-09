@@ -10,10 +10,11 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
+import com.google.api.client.util.store.DataStoreFactory;
+import com.google.api.client.util.store.RedisDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.*;
-import com.wire.bots.cali.utils.DbDataStoreFactory;
 import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
@@ -165,7 +166,7 @@ public class CalendarAPI {
     private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = flows.get(botId);
         if (flow == null) {
-            DbDataStoreFactory factory = new DbDataStoreFactory(Service.CONFIG.db, botId);
+            DataStoreFactory factory = new RedisDataStoreFactory(Service.CONFIG.db, botId);
 
             flow = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)

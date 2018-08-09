@@ -12,48 +12,38 @@
  * the License.
  */
 
-package com.wire.bots.cali.utils;
+package com.google.api.client.util.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.util.Maps;
-import com.google.api.client.util.store.AbstractDataStoreFactory;
-import com.google.api.client.util.store.DataStore;
 import com.wire.bots.sdk.Configuration;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.HashMap;
 
-/**
- * Thread-safe file implementation of a credential store.
- *
- * <p>
- * For security purposes, the file's permissions are set to be accessible only by the file's owner.
- * Note that Java 1.5 does not support manipulating file permissions, and must be done manually or
- * using the JNI.
- * </p>
- *
- * @author Yaniv Inbar
- * @since 1.16
- */
-public class DbDataStoreFactory extends AbstractDataStoreFactory {
+public class RedisDataStoreFactory extends FileDataStoreFactory {
 
     private final Redis redis;
     private final String botId;
 
-    public DbDataStoreFactory(Configuration.DB db, String botId) {
+    public RedisDataStoreFactory(Configuration.DB db, String botId) throws IOException {
+        super(new File("/tmp"));
+
         this.redis = new Redis(db.host, db.port, db.password);
         this.botId = botId;
     }
 
     @Override
     protected <V extends Serializable> DataStore<V> createDataStore(String id) throws IOException {
-        return new FileDataStore<>(this, String.format("%s_%s", id, botId));
+        String name = String.format("%s_%s", id, botId);
+        return new RedisDataStore<>(this, name);
     }
 
     /**
@@ -62,11 +52,11 @@ public class DbDataStoreFactory extends AbstractDataStoreFactory {
      *
      * @param <V> serializable type of the mapped value
      */
-    class FileDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
+    private class RedisDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
         private final ObjectMapper objectMapper = new ObjectMapper();
-        private final DbDataStoreFactory dataStoreFactory;
+        private final RedisDataStoreFactory dataStoreFactory;
 
-        FileDataStore(DbDataStoreFactory dataStore, String id) throws IOException {
+        RedisDataStore(RedisDataStoreFactory dataStore, String id) throws IOException {
             super(dataStore, id);
             this.dataStoreFactory = dataStore;
 
@@ -92,12 +82,12 @@ public class DbDataStoreFactory extends AbstractDataStoreFactory {
         }
 
         @Override
-        public DbDataStoreFactory getDataStoreFactory() {
+        public RedisDataStoreFactory getDataStoreFactory() {
             return dataStoreFactory;
         }
     }
 
-    static class Redis {
+    private static class Redis {
         private static final int TIMEOUT = 5000;
         private static JedisPool pool;
         private final String host;
@@ -158,5 +148,4 @@ public class DbDataStoreFactory extends AbstractDataStoreFactory {
         }
 
     }
-
 }
