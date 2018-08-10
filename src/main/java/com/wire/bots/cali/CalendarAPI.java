@@ -16,6 +16,7 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.*;
 import com.wire.bots.sdk.tools.Logger;
+import com.wire.bots.sdk.tools.Util;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
@@ -122,7 +123,7 @@ public class CalendarAPI {
         channel.setId(botId);
         channel.setKind("api#channel");
         channel.setType("web_hook");
-        channel.setAddress("https://services.wire.com/cali/notifications");
+        channel.setAddress(String.format("https://services.%s/cali/notifications", Util.getDomain()));
 
         Calendar.Events.Watch watch = getCalendarService(botId)
                 .events()

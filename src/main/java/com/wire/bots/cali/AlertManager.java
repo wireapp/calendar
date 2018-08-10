@@ -59,14 +59,14 @@ class AlertManager {
 
             for (final Event event : events.getItems()) {
                 try {
-                    Event.Reminders reminders = event.getReminders();
                     int i = 0;
-                    if (reminders.getOverrides() == null) {
-                        for (EventReminder reminder : events.getDefaultReminders()) {
+                    List<EventReminder> overrides = event.getReminders().getOverrides();
+                    if (overrides != null) {
+                        for (EventReminder reminder : overrides) {
                             scheduleReminder(wireClient, event, reminder, i++);
                         }
                     } else {
-                        for (EventReminder reminder : reminders.getOverrides()) {
+                        for (EventReminder reminder : events.getDefaultReminders()) {
                             scheduleReminder(wireClient, event, reminder, i++);
                         }
                     }
