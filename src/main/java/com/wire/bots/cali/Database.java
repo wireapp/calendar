@@ -6,7 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class Database {
+class Database {
     private final Configuration.DB conf;
 
     Database(Configuration.DB postgres) {
@@ -58,7 +58,7 @@ public class Database {
         return setSchedule(botId, null);
     }
 
-    public boolean unsubscribe(String botId) throws SQLException {
+    boolean unsubscribe(String botId) throws SQLException {
         try (Connection c = newConnection()) {
             PreparedStatement stmt = c.prepareStatement("DELETE FROM Cali WHERE botId = ?");
             stmt.setObject(1, UUID.fromString(botId));
