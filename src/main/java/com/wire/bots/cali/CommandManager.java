@@ -11,6 +11,7 @@ import com.wire.bots.sdk.models.AssetKey;
 import com.wire.bots.sdk.server.model.User;
 import com.wire.bots.sdk.tools.Logger;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -64,12 +65,22 @@ class CommandManager {
     }
 
     private void listEvents(WireClient client, String args) throws Exception {
+        String botId = client.getId();
         try {
             final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
             final StringBuilder sb = new StringBuilder("Upcoming events:\n");
-            final int maxResults = parseInt(args, 5);
-
-            final Events events = CalendarAPI.listEvents(client.getId(), maxResults);
+            Events events;
+            switch (args) {
+                case "today":
+                    events = listEventsToday(botId);
+                    break;
+                case "tomorrow":
+                    events = listEventsTomorrow(botId);
+                    break;
+                default:
+                    events = CalendarAPI.listEvents(botId, parseInt(args, 5));
+                    break;
+            }
 
             for (Event event : events.getItems()) {
                 EventDateTime eventStart = event.getStart();
@@ -81,10 +92,34 @@ class CommandManager {
             }
             client.sendText(sb.toString());
         } catch (Exception e) {
-            Logger.warning("listEvents: %s", e.getMessage());
+            Logger.warning("listEvents: %s %s", botId, e);
             client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
                     "to your Google account");
         }
+    }
+
+    private Events listEventsToday(String botId) throws IOException {
+        Date end = new Date(System.currentTimeMillis());
+        end.setHours(23);
+        end.setMinutes(59);
+        end.setSeconds(59);
+        return CalendarAPI.listEvents(botId, new DateTime(System.currentTimeMillis()), new DateTime(end));
+    }
+
+    private Events listEventsTomorrow(String botId) throws IOException {
+        Date start = new Date(System.currentTimeMillis());
+        start.setDate(start.getDate() + 1);
+        start.setHours(0);
+        start.setMinutes(0);
+        start.setSeconds(0);
+
+        Date end = new Date(System.currentTimeMillis());
+        end.setDate(end.getDate() + 1);
+        end.setHours(23);
+        end.setMinutes(59);
+        end.setSeconds(59);
+
+        return CalendarAPI.listEvents(botId, new DateTime(start), new DateTime(end));
     }
 
     private int parseInt(String args, int defaultVal) {

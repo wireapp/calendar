@@ -169,6 +169,18 @@ public class CalendarAPI {
                 .setTimeMin(now)
                 .setOrderBy("startTime")
                 .setSingleEvents(true)
+                .setShowDeleted(false)
+                .execute();
+    }
+
+    static Events listEvents(String botId, DateTime min, DateTime max) throws IOException {
+        Calendar service = getCalendarService(botId);
+        return service.events().list("primary")
+                .setTimeMin(min)
+                .setTimeMax(max)
+                .setOrderBy("startTime")
+                .setSingleEvents(true)
+                .setShowDeleted(false)
                 .execute();
     }
 
