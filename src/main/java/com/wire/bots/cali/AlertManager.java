@@ -101,15 +101,14 @@ class AlertManager {
             public void run() {
                 String botId = wireClient.getId();
                 try {
-                    Event e = CalendarAPI.getEvent(botId, eventId);
-                    if (e != null) {
-                        DateTime eventStart = e.getStart().getDateTime();
-
-                        long l = eventStart.getValue() - System.currentTimeMillis();
-                        long minutes = TimeUnit.MILLISECONDS.toMinutes(l);
-
+                    Event event = CalendarAPI.getEvent(botId, eventId);
+                    if (event != null && !Objects.equals("cancelled", event.getStatus())) {
                         wireClient.ping();
-                        String msg = String.format("**%s** in **%d** minutes", e.getSummary(), minutes);
+
+                        long l = event.getStart().getDateTime().getValue() - System.currentTimeMillis();
+                        int minutes = Math.round(l / 60000f);
+
+                        String msg = String.format("**%s** in **%d** minutes", event.getSummary(), minutes);
                         wireClient.sendText(msg);
                     }
                 } catch (Exception e) {
