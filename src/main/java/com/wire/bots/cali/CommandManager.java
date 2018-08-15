@@ -19,7 +19,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 class CommandManager {
-    private static final String PREVIEW_PIC_URL = "https://www.elmbrookschools.org/uploaded/images/Google_Suite.png";
+    private static final String PREVIEW_PIC_URL = "https://i.imgur.com/v9FQ8ba.png";
     private static final String COMMAND_LIST = "/list";
     private static final String COMMAND_POLLY = "/polly";
     private static final String COMMAND_AUTH = "/auth";
@@ -67,30 +67,33 @@ class CommandManager {
     private void listEvents(WireClient client, String args) throws Exception {
         String botId = client.getId();
         try {
-            final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
-            final StringBuilder sb = new StringBuilder("Upcoming events:\n");
             Events events;
             switch (args) {
                 case "today":
                     events = listEventsToday(botId);
+                    if(events.getItems().isEmpty()){
+                        client.sendText("You have no events for " + args);
+                        return;
+                    }
                     break;
                 case "tomorrow":
                     events = listEventsTomorrow(botId);
+                    if(events.getItems().isEmpty()){
+                        client.sendText("You have no events for " + args);
+                        return;
+                    }
                     break;
                 default:
                     events = CalendarAPI.listEvents(botId, parseInt(args, 5));
+                    if(events.getItems().isEmpty()){
+                        client.sendText("You have no upcoming events");
+                        return;
+                    }
                     break;
             }
 
-            for (Event event : events.getItems()) {
-                EventDateTime eventStart = event.getStart();
-                DateTime start = eventStart.getDateTime();
-                long value = start != null
-                        ? start.getValue() + TimeUnit.MINUTES.toMillis(start.getTimeZoneShift())
-                        : eventStart.getDate().getValue();
-                sb.append(String.format("**%s** on %s\n", event.getSummary(), format.format(new Date(value))));
-            }
-            client.sendText(sb.toString());
+            String msg = printEvents(events);
+            client.sendText(msg);
         } catch (Exception e) {
             Logger.warning("listEvents: %s %s", botId, e);
             client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
@@ -181,5 +184,20 @@ class CommandManager {
         AssetKey assetKey = client.uploadAsset(preview);
         preview.setAssetKey(assetKey.key);
         return preview;
+    }
+
+    private String printEvents(Events events) {
+        final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+        final StringBuilder sb = new StringBuilder("Upcoming events:\n");
+
+        for (Event event : events.getItems()) {
+            EventDateTime eventStart = event.getStart();
+            DateTime start = eventStart.getDateTime();
+            long value = start != null
+                    ? start.getValue() + TimeUnit.MINUTES.toMillis(start.getTimeZoneShift())
+                    : eventStart.getDate().getValue();
+            sb.append(String.format("**%s** on %s\n", event.getSummary(), format.format(new Date(value))));
+        }
+        return sb.toString();
     }
 }
