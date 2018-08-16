@@ -49,7 +49,7 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public String getName(NewBot newBot) {
-        return String.format("%s's Google Calendar", newBot.origin.name);
+        return String.format("%s's Calendar", newBot.origin.name);
     }
 
     @Override

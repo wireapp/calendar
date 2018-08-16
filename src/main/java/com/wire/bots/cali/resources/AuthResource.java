@@ -44,15 +44,16 @@ public class AuthResource {
             WireClient wireClient = repo.getWireClient(bot);
             if (wireClient != null) {
                 Calendar calendar = CalendarAPI.getCalendarService(bot);
-                String msg = String.format("Nice! I am now connected to your **%s** calendar.\n" +
-                        "I will be posting reminders and updates of your scheduled events here.\n" +
-                        "A couple of tips:\n" +
+                String msg = String.format("Nice! I now have access to the **%s** calendar.\n" +
+                                "I will be posting reminders and updates of your scheduled events here.\n",
+                        calendar.calendars().get("primary").getCalendarId());
+                wireClient.sendText(msg);
+                wireClient.sendText("A couple of tips:\n" +
                         "For a quick overview of your\n" +
                         "forthcoming events, type: `/list`\n" +
                         "If you want to see your day’s schedule\n" +
                         "use: `/today` or `/tomorrow`\n" +
-                        "Type `/help` if you want me to remind you how I work.", calendar.calendars().get("primary").getCalendarId());
-                wireClient.sendText(msg);
+                        "Type `/help` for more details.");
             }
 
             return Response.

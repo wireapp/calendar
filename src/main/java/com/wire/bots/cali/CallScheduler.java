@@ -101,8 +101,8 @@ public class CallScheduler {
         Logger.info("Set schedule for bot: %s %s", botId, setSchedule);
     }
 
-    void setMuted(String botId, boolean muted) throws Exception {
-        database.setMuted(botId, muted);
+    boolean setMuted(String botId, boolean muted) throws Exception {
         Logger.info("Set Muted to: %s for bot: %s", botId, muted);
+        return database.setMuted(botId, muted);
     }
 }

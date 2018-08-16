@@ -24,6 +24,7 @@ class CommandManager {
     private static final String COMMAND_POLLY = "/polly";
     private static final String COMMAND_AUTH = "/auth";
     private static final String COMMAND_CALI = "/cali";
+    private static final String NO_EVENTS_SCHEDULED_SO_FAR = "No events scheduled so far.";
 
     private final CallScheduler callScheduler;
 
@@ -46,25 +47,25 @@ class CommandManager {
             int maxResults = parseInt(args, 5);
             Events events = CalendarAPI.listEvents(client.getId(), maxResults);
             if (events.getItems().isEmpty()) {
-                client.sendText("You have no upcoming events");
+                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
             } else {
-                String msg = printEvents(events);
+                String msg = printEvents(events, "Here are your upcoming events:");
                 client.sendText(msg);
             }
         } else if (command.equals("/today")) {
             Events events = listEventsToday(client.getId());
             if (events.getItems().isEmpty()) {
-                client.sendText("You have no events for today");
+                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
             } else {
-                String msg = printEvents(events);
+                String msg = printEvents(events, "Today’s events:");
                 client.sendText(msg);
             }
         } else if (command.equals("/tomorrow")) {
             Events events = listEventsTomorrow(client.getId());
             if (events.getItems().isEmpty()) {
-                client.sendText("You have no events for tomorrow");
+                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
             } else {
-                String msg = printEvents(events);
+                String msg = printEvents(events,"Tomorrow’s events:");
                 client.sendText(msg);
             }
         } else if (command.startsWith(COMMAND_POLLY)) {
@@ -92,7 +93,19 @@ class CommandManager {
     }
 
     private void setMute(WireClient client, boolean muted) throws Exception {
-        callScheduler.setMuted(client.getId(), muted);
+        boolean setMuted = callScheduler.setMuted(client.getId(), muted);
+        if (setMuted) {
+            if (muted) {
+                String msg = "Notifications about your events are now **off**.\n" +
+                        "If you want them back, type: `/unmute`";
+                client.sendText(msg);
+            } else {
+                String msg = "Notifications about your events are now **on**.";
+                client.sendText(msg);
+            }
+        } else {
+            Logger.warning("Failed to invoke setMute: %s", client.getId());
+        }
     }
 
     void showAuthLink(WireClient client, User origin) throws Exception {
@@ -191,10 +204,11 @@ class CommandManager {
         return preview;
     }
 
-    private String printEvents(Events events) {
+    private String printEvents(Events events, String title) {
         final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
-        final StringBuilder sb = new StringBuilder("Upcoming events:\n");
+        final StringBuilder sb = new StringBuilder(title);
 
+        sb.append("\n");
         for (Event event : events.getItems()) {
             EventDateTime eventStart = event.getStart();
             DateTime start = eventStart.getDateTime();
