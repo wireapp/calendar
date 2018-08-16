@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 class AlertManager {
     private static final int PERIOD = 1;
+    private final DateFormat dateFormat = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
     private final ClientRepo repo;
@@ -81,20 +82,18 @@ class AlertManager {
         }
     }
 
-    private boolean scheduleReminder(WireClient wireClient, Event event, EventReminder reminder, int i) {
+    private void scheduleReminder(WireClient wireClient, Event event, EventReminder reminder, int i) {
         String id = String.format("%s-%s-%d", wireClient.getId(), event.getId(), i);
         if (remindersMap.put(id, event) != null)
-            return false;
+            return;
 
         final DateTime start = event.getStart().getDateTime();
         if (start != null) {
             Date at = new Date(start.getValue() - TimeUnit.MINUTES.toMillis(reminder.getMinutes()));
             if (at.getTime() > System.currentTimeMillis()) {
                 scheduleReminder(wireClient, at, event.getId());
-                return true;
             }
         }
-        return false;
     }
 
     private void scheduleReminder(final WireClient wireClient, final Date at, final String eventId) {
@@ -107,7 +106,7 @@ class AlertManager {
                     if (event != null) {
                         boolean muted = database.isMuted(botId);
                         if (muted) {
-                            Logger.info("scheduleReminder: %s Event: %s Muted: %s", botId, event.getId(), muted);
+                            Logger.info("scheduleReminder: %s Event: %s Muted", botId, event.getId());
                             return;
                         }
 
@@ -116,18 +115,17 @@ class AlertManager {
                             return;
                         }
 
-                        wireClient.ping();
-
+                        int timeZoneShift = event.getStart().getDateTime().getTimeZoneShift();
                         long start = event.getStart().getDateTime().getValue();
-                        long l = start - System.currentTimeMillis();
-                        int minutes = Math.round(l / 60000f);
-                        final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
+                        int minutes = Math.round((start - System.currentTimeMillis()) / 60000f);
 
                         String msg = String.format("Starting in %d minutes\n[%s](%s)\n%s",
                                 minutes,
                                 event.getSummary(),
                                 event.getHtmlLink(),
-                                format.format(new Date(start)));
+                                dateFormat.format(new Date(start + TimeUnit.MINUTES.toMillis(timeZoneShift))));
+
+                        wireClient.ping();
                         wireClient.sendText(msg);
                     }
                 } catch (Exception e) {
