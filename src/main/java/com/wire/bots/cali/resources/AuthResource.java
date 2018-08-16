@@ -1,6 +1,7 @@
 package com.wire.bots.cali.resources;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Channel;
 import com.wire.bots.cali.CalendarAPI;
 import com.wire.bots.sdk.ClientRepo;
@@ -42,12 +43,21 @@ public class AuthResource {
 
             WireClient wireClient = repo.getWireClient(bot);
             if (wireClient != null) {
-                String msg = "Cool! You can list upcoming events by typing: `/list`\n";
+                Calendar calendar = CalendarAPI.getCalendarService(bot);
+                String msg = String.format("Nice! I am now connected to your **%s** calendar.\n" +
+                        "I will be posting reminders and updates of your scheduled events here.\n" +
+                        "A couple of tips:\n" +
+                        "For a quick overview of your\n" +
+                        "forthcoming events, type: `/list`\n" +
+                        "If you want to see your day’s schedule\n" +
+                        "use: `/today` or `/tomorrow`\n" +
+                        "Type `/help` if you want me to remind you how I work.", calendar.calendars().get("primary").getCalendarId());
                 wireClient.sendText(msg);
             }
 
             return Response.
-                    ok("Thank you!").
+                    ok("Your calendar is now connected.\n" +
+                            "Updates and reminders from your default calendar will be posted in the conversation.").
                     status(200).
                     build();
         } catch (Exception e) {

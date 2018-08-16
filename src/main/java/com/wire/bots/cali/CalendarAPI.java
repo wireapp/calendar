@@ -68,7 +68,7 @@ public class CalendarAPI {
         return flow.createAndStoreCredential(response, botId);
     }
 
-    static Calendar getCalendarService(String botId) throws IOException {
+    public static Calendar getCalendarService(String botId) throws IOException {
         Credential credential = getFlow(botId).loadCredential(botId);
         return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)

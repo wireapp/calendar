@@ -43,7 +43,30 @@ class CommandManager {
             showAuthLink(client, owner);
         } else if (command.startsWith(COMMAND_LIST)) {
             String args = command.replace(COMMAND_LIST, "").trim();
-            listEvents(client, args);
+            int maxResults = parseInt(args, 5);
+            Events events = CalendarAPI.listEvents(client.getId(), maxResults);
+            if (events.getItems().isEmpty()) {
+                client.sendText("You have no upcoming events");
+            } else {
+                String msg = printEvents(events);
+                client.sendText(msg);
+            }
+        } else if (command.equals("/today")) {
+            Events events = listEventsToday(client.getId());
+            if (events.getItems().isEmpty()) {
+                client.sendText("You have no events for today");
+            } else {
+                String msg = printEvents(events);
+                client.sendText(msg);
+            }
+        } else if (command.equals("/tomorrow")) {
+            Events events = listEventsTomorrow(client.getId());
+            if (events.getItems().isEmpty()) {
+                client.sendText("You have no events for tomorrow");
+            } else {
+                String msg = printEvents(events);
+                client.sendText(msg);
+            }
         } else if (command.startsWith(COMMAND_POLLY)) {
             String args = command.replace(COMMAND_POLLY, "").trim();
             scheduleCall(client, args);
@@ -54,7 +77,18 @@ class CommandManager {
             setMute(client, true);
         } else if (command.equals("/unmute")) {
             setMute(client, false);
+        } else if (command.equals("/help")) {
+            showHelp(client, owner);
         }
+    }
+
+    private void showHelp(WireClient client, User owner) throws Exception {
+        String msg = "Here is how you can use me.\nFor a quick overview of your" +
+                " forthcoming events, type: `/list`\n" +
+                "If you want to see your day’s schedule\n" +
+                "use: `/today` or `/tomorrow`\nThe command works only when it" +
+                " starts a message and there is no space after the ”/“ character.";
+        client.sendDirectText(msg, owner.id);
     }
 
     private void setMute(WireClient client, boolean muted) throws Exception {
@@ -69,43 +103,6 @@ class CommandManager {
         } catch (Exception e) {
             Logger.error("showAuthLink: bot: %s error: %s", client.getId(), e);
             client.sendText("Something went wrong :(.");
-        }
-    }
-
-    private void listEvents(WireClient client, String args) throws Exception {
-        String botId = client.getId();
-        try {
-            Events events;
-            switch (args) {
-                case "today":
-                    events = listEventsToday(botId);
-                    if (events.getItems().isEmpty()) {
-                        client.sendText("You have no events for " + args);
-                        return;
-                    }
-                    break;
-                case "tomorrow":
-                    events = listEventsTomorrow(botId);
-                    if (events.getItems().isEmpty()) {
-                        client.sendText("You have no events for " + args);
-                        return;
-                    }
-                    break;
-                default:
-                    events = CalendarAPI.listEvents(botId, parseInt(args, 5));
-                    if (events.getItems().isEmpty()) {
-                        client.sendText("You have no upcoming events");
-                        return;
-                    }
-                    break;
-            }
-
-            String msg = printEvents(events);
-            client.sendText(msg);
-        } catch (Exception e) {
-            Logger.warning("listEvents: %s %s", botId, e);
-            client.sendText("Failed to connect to Google Calendar. Have you signed in? Type: `/auth` and sign in " +
-                    "to your Google account");
         }
     }
 
@@ -204,7 +201,7 @@ class CommandManager {
             long value = start != null
                     ? start.getValue() + TimeUnit.MINUTES.toMillis(start.getTimeZoneShift())
                     : eventStart.getDate().getValue();
-            sb.append(String.format("**%s** on %s\n", event.getSummary(), format.format(new Date(value))));
+            sb.append(String.format("[%s](%s)\n%s\n", event.getSummary(), event.getHtmlLink(), format.format(new Date(value))));
         }
         return sb.toString();
     }

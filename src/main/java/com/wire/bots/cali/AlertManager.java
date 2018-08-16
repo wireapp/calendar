@@ -10,6 +10,8 @@ import com.wire.bots.sdk.tools.Logger;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -116,10 +118,16 @@ class AlertManager {
 
                         wireClient.ping();
 
-                        long l = event.getStart().getDateTime().getValue() - System.currentTimeMillis();
+                        long start = event.getStart().getDateTime().getValue();
+                        long l = start - System.currentTimeMillis();
                         int minutes = Math.round(l / 60000f);
+                        final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
 
-                        String msg = String.format("**%s** in **%d** minutes", event.getSummary(), minutes);
+                        String msg = String.format("Starting in %d minutes\n[%s](%s)\n%s",
+                                minutes,
+                                event.getSummary(),
+                                event.getHtmlLink(),
+                                format.format(new Date(start)));
                         wireClient.sendText(msg);
                     }
                 } catch (Exception e) {
