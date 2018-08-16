@@ -102,7 +102,18 @@ class AlertManager {
                 String botId = wireClient.getId();
                 try {
                     Event event = CalendarAPI.getEvent(botId, eventId);
-                    if (event != null && !Objects.equals("cancelled", event.getStatus())) {
+                    if (event != null) {
+                        boolean muted = database.isMuted(botId);
+                        if (muted) {
+                            Logger.info("scheduleReminder: %s Event: %s Muted: %s", botId, event.getId(), muted);
+                            return;
+                        }
+
+                        if (Objects.equals("cancelled", event.getStatus())) {
+                            Logger.info("scheduleReminder: %s Event: %s Cancelled: %s", botId, event.getId(), event.getStatus());
+                            return;
+                        }
+
                         wireClient.ping();
 
                         long l = event.getStart().getDateTime().getValue() - System.currentTimeMillis();

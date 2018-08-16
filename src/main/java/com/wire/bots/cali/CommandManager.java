@@ -50,7 +50,15 @@ class CommandManager {
         } else if (command.startsWith(COMMAND_CALI)) {
             String args = command.replace(COMMAND_CALI, "").trim();
             scheduleNewEvent(client, args);
+        } else if (command.equals("/mute")) {
+            setMute(client, true);
+        } else if (command.equals("/unmute")) {
+            setMute(client, false);
         }
+    }
+
+    private void setMute(WireClient client, boolean muted) throws Exception {
+        callScheduler.setMuted(client.getId(), muted);
     }
 
     void showAuthLink(WireClient client, User origin) throws Exception {
@@ -71,21 +79,21 @@ class CommandManager {
             switch (args) {
                 case "today":
                     events = listEventsToday(botId);
-                    if(events.getItems().isEmpty()){
+                    if (events.getItems().isEmpty()) {
                         client.sendText("You have no events for " + args);
                         return;
                     }
                     break;
                 case "tomorrow":
                     events = listEventsTomorrow(botId);
-                    if(events.getItems().isEmpty()){
+                    if (events.getItems().isEmpty()) {
                         client.sendText("You have no events for " + args);
                         return;
                     }
                     break;
                 default:
                     events = CalendarAPI.listEvents(botId, parseInt(args, 5));
-                    if(events.getItems().isEmpty()){
+                    if (events.getItems().isEmpty()) {
                         client.sendText("You have no upcoming events");
                         return;
                     }

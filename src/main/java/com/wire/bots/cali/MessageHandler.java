@@ -86,8 +86,8 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onCalling(WireClient client, String userId, String clientId, String content) {
         String botId = client.getId();
-        Blender blender = getBlender(botId);
-        blender.recvMessage(botId, userId, clientId, content);
+//        Blender blender = getBlender(botId);
+//        blender.recvMessage(botId, userId, clientId, content);
     }
 
     @Override

@@ -2,3 +2,6 @@ CREATE TABLE Cali (
  botId UUID NOT NULL PRIMARY KEY,
  schedule varchar
 );
+
+ALTER TABLE Cali
+ADD COLUMN muted BOOL DEFAULT 'f';

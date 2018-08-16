@@ -54,6 +54,27 @@ class Database {
         return null;
     }
 
+    boolean setMuted(String botId, boolean value) throws Exception {
+        try (Connection c = newConnection()) {
+            PreparedStatement stmt = c.prepareStatement("UPDATE Cali set muted = ? WHERE botId = ?");
+            stmt.setBoolean(1, value);
+            stmt.setObject(2, UUID.fromString(botId));
+            return stmt.executeUpdate() == 1;
+        }
+    }
+
+    boolean isMuted(String botId) throws SQLException {
+        try (Connection c = newConnection()) {
+            PreparedStatement stmt = c.prepareStatement("SELECT muted FROM Cali WHERE botId = ?");
+            stmt.setObject(1, UUID.fromString(botId));
+            ResultSet resultSet = stmt.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getBoolean("muted");
+            }
+        }
+        return false;
+    }
+
     boolean deleteSchedule(String botId) throws Exception {
         return setSchedule(botId, null);
     }

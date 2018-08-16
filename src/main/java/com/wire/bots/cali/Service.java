@@ -33,7 +33,7 @@ public class Service extends Server<Config> {
     static Config CONFIG;
 
     public static void main(String[] args) throws Exception {
-        System.loadLibrary("blender"); // Load native library at runtime
+        //System.loadLibrary("blender"); // Load native library at runtime
         new Service().run(args);
     }
 
