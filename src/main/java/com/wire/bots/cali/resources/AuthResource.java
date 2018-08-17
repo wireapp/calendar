@@ -12,6 +12,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
+import java.util.concurrent.TimeUnit;
 
 @Path("/user/auth/google_oauth2/callback")
 public class AuthResource {
@@ -34,12 +35,12 @@ public class AuthResource {
                 Logger.error("AuthResource: %s %s", bot, e);
             }
 
-//            Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
-//                    bot,
-//                    credential.getAccessToken() != null,
-//                    credential.getRefreshToken() != null,
-//                    TimeUnit.SECONDS.toMinutes(credential.getExpiresInSeconds())
-//            );
+            Logger.info("New Credentials: Bot:%s token: %s refresh: %s Exp: %d minutes",
+                    bot,
+                    credential.getAccessToken() != null,
+                    credential.getRefreshToken() != null,
+                    TimeUnit.SECONDS.toMinutes(credential.getExpiresInSeconds())
+            );
 
             WireClient wireClient = repo.getWireClient(bot);
             if (wireClient != null) {

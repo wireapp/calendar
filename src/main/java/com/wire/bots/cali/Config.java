@@ -24,17 +24,12 @@ import com.wire.bots.sdk.Configuration;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Config extends Configuration {
     public String secretPath;
-    public String redirect;
     public String ingress;
     public int portMin;
     public int portMax;
     public String module;
     public DB postgres;
-
-    public String getRedirect() {
-        return redirect;
-    }
-
+    
     public String getSecretPath() {
         return secretPath;
     }

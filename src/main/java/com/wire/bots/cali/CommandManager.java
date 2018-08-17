@@ -29,7 +29,7 @@ class CommandManager {
     private final CallScheduler callScheduler;
 
     CommandManager(ClientRepo repo) {
-        this.callScheduler = new CallScheduler(Service.CONFIG.postgres, repo);
+        this.callScheduler = new CallScheduler(Service.CONFIG.getPostgres(), repo);
         try {
             callScheduler.loadSchedules();
         } catch (Exception e) {

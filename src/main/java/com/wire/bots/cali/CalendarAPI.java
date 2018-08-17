@@ -54,15 +54,19 @@ public class CalendarAPI {
     static String getAuthUrl(String botId) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
         return flow.newAuthorizationUrl()
-                .setRedirectUri(Service.CONFIG.getRedirect())
+                .setRedirectUri(getRedirect())
                 .setState(botId)
                 .build();
+    }
+
+    private static String getRedirect() {
+        return String.format("https://services.%s/cali/user/auth/google_oauth2/callback", Util.getDomain());
     }
 
     public static Credential processAuthCode(String botId, String code) throws IOException {
         GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleTokenResponse response = flow.newTokenRequest(code)
-                .setRedirectUri(Service.CONFIG.getRedirect())
+                .setRedirectUri(getRedirect())
                 .execute();
 
         return flow.createAndStoreCredential(response, botId);
