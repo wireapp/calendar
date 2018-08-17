@@ -22,9 +22,13 @@ class CommandManager {
     private static final String PREVIEW_PIC_URL = "https://i.imgur.com/v9FQ8ba.png";
     private static final String COMMAND_LIST = "/list";
     private static final String COMMAND_POLLY = "/polly";
-    private static final String COMMAND_AUTH = "/auth";
     private static final String COMMAND_CALI = "/cali";
     private static final String NO_EVENTS_SCHEDULED_SO_FAR = "No events scheduled so far.";
+    private static final String COMMAND_TODAY = "/today";
+    private static final String COMMAND_TOMORROW = "/tomorrow";
+    private static final String COMMAND_MUTE = "/mute";
+    private static final String COMMAND_UNMUTE = "/unmute";
+    private static final String COMMAND_HELP = "/help";
 
     private final CallScheduler callScheduler;
 
@@ -37,36 +41,34 @@ class CommandManager {
         }
     }
 
-    void processCommand(WireClient client, User owner, String command) throws Exception {
+    void processCommand(WireClient client, String sender, String command) throws Exception {
         command = command.toLowerCase().trim();
 
-        if (command.equalsIgnoreCase(COMMAND_AUTH)) {
-            showAuthLink(client, owner);
-        } else if (command.startsWith(COMMAND_LIST)) {
+        if (command.startsWith(COMMAND_LIST)) {
             String args = command.replace(COMMAND_LIST, "").trim();
             int maxResults = parseInt(args, 5);
             Events events = CalendarAPI.listEvents(client.getId(), maxResults);
             if (events.getItems().isEmpty()) {
-                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
+                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
             } else {
                 String msg = printEvents(events, "Here are your upcoming events:");
-                client.sendText(msg);
+                client.sendDirectText(msg, sender);
             }
-        } else if (command.equals("/today")) {
+        } else if (command.equals(COMMAND_TODAY)) {
             Events events = listEventsToday(client.getId());
             if (events.getItems().isEmpty()) {
-                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
+                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
             } else {
                 String msg = printEvents(events, "Today’s events:");
-                client.sendText(msg);
+                client.sendDirectText(msg, sender);
             }
-        } else if (command.equals("/tomorrow")) {
+        } else if (command.equals(COMMAND_TOMORROW)) {
             Events events = listEventsTomorrow(client.getId());
             if (events.getItems().isEmpty()) {
-                client.sendText(NO_EVENTS_SCHEDULED_SO_FAR);
+                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
             } else {
-                String msg = printEvents(events,"Tomorrow’s events:");
-                client.sendText(msg);
+                String msg = printEvents(events, "Tomorrow’s events:");
+                client.sendDirectText(msg, sender);
             }
         } else if (command.startsWith(COMMAND_POLLY)) {
             String args = command.replace(COMMAND_POLLY, "").trim();
@@ -74,16 +76,16 @@ class CommandManager {
         } else if (command.startsWith(COMMAND_CALI)) {
             String args = command.replace(COMMAND_CALI, "").trim();
             scheduleNewEvent(client, args);
-        } else if (command.equals("/mute")) {
+        } else if (command.equals(COMMAND_MUTE)) {
             setMute(client, true);
-        } else if (command.equals("/unmute")) {
+        } else if (command.equals(COMMAND_UNMUTE)) {
             setMute(client, false);
-        } else if (command.equals("/help")) {
-            showHelp(client, owner);
+        } else if (command.equals(COMMAND_HELP)) {
+            showHelp(client, sender);
         }
     }
 
-    private void showHelp(WireClient client, User owner) throws Exception {
+    private void showHelp(WireClient client, String sender) throws Exception {
         String msg = "Here's the list of my controls:\n" +
                 "\n" +
                 "For a quick overview of your upcoming events, type: \n" +
@@ -97,7 +99,7 @@ class CommandManager {
                 "—\n" +
                 "By the way, commands only work when placed at the beginning of a message.\n" +
                 "Make sure there is no space between the ”/“ character and the command.";
-        client.sendText(msg);
+        client.sendDirectText(msg, sender);
     }
 
     private void setMute(WireClient client, boolean muted) throws Exception {

@@ -94,7 +94,7 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onText(WireClient client, TextMessage msg) {
         try {
-            commandManager.processCommand(client, getOwner(client), msg.getText());
+            commandManager.processCommand(client, msg.getUserId(), msg.getText());
         } catch (Exception e) {
             Logger.warning("onText: %s %s", client.getId(), e);
         }
