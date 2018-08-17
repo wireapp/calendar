@@ -66,7 +66,8 @@ public class MessageHandler extends MessageHandlerBase {
     @Override
     public void onNewConversation(final WireClient client) {
         try {
-            //client.sendText("Hey, I just met you and this is crazy\nBut here's my number, so call me maybe");
+            client.sendText("Hello!\n" +
+                    "Thank you for adding me here. Follow this link to connect me to one of your calendars.");
             commandManager.showAuthLink(client, getOwner(client));
         } catch (Exception e) {
             Logger.warning("onNewConversation: %s %s", client.getId(), e);
