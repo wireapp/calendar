@@ -84,20 +84,28 @@ class CommandManager {
     }
 
     private void showHelp(WireClient client, User owner) throws Exception {
-        String msg = "Here is how you can use me.\nFor a quick overview of your" +
-                " forthcoming events, type: `/list`\n" +
-                "If you want to see your day’s schedule\n" +
-                "use: `/today` or `/tomorrow`\nThe command works only when it" +
-                " starts a message and there is no space after the ”/“ character.";
-        client.sendDirectText(msg, owner.id);
+        String msg = "Here's the list of my controls:\n" +
+                "\n" +
+                "For a quick overview of your upcoming events, type: \n" +
+                "`/list` or `/list 10`\n" +
+                "—\n" +
+                "For your daily schedule use: \n" +
+                "`/today` or `/tomorrow`\n" +
+                "—\n" +
+                "You can turn on/off my event notifications with: \n" +
+                "`/mute` and `/unmute`\n" +
+                "—\n" +
+                "By the way, commands only work when placed at the beginning of a message.\n" +
+                "Make sure there is no space between the ”/“ character and the command.";
+        client.sendText(msg);
     }
 
     private void setMute(WireClient client, boolean muted) throws Exception {
         boolean setMuted = callScheduler.setMuted(client.getId(), muted);
         if (setMuted) {
             if (muted) {
-                String msg = "Notifications about your events are now **off**.\n" +
-                        "If you want them back, type: `/unmute`";
+                String msg = "Notifications about your events are now **off**. \n" +
+                        "If you want to turn them back on, type: `/unmute` .";
                 client.sendText(msg);
             } else {
                 String msg = "Notifications about your events are now **on**.";
