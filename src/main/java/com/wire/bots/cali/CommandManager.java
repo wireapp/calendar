@@ -218,14 +218,14 @@ class CommandManager {
         final DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
         final StringBuilder sb = new StringBuilder(title);
 
-        sb.append("\n");
+        sb.append("\n\n");
         for (Event event : events.getItems()) {
             EventDateTime eventStart = event.getStart();
             DateTime start = eventStart.getDateTime();
             long value = start != null
                     ? start.getValue() + TimeUnit.MINUTES.toMillis(start.getTimeZoneShift())
                     : eventStart.getDate().getValue();
-            sb.append(String.format("[%s](%s)\n%s\n", event.getSummary(), event.getHtmlLink(), format.format(new Date(value))));
+            sb.append(String.format("[%s](%s)\n%s\n—\n", event.getSummary(), event.getHtmlLink(), format.format(new Date(value))));
         }
         return sb.toString();
     }
