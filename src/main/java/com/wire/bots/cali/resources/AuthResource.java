@@ -11,6 +11,7 @@ import com.wire.bots.sdk.tools.Logger;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.concurrent.TimeUnit;
 
@@ -58,8 +59,7 @@ public class AuthResource {
             }
 
             return Response.
-                    ok("Your calendar is now connected.\n" +
-                            "Updates and reminders from your default calendar will be posted in the conversation.").
+                    ok(AuthResource.class.getClassLoader().getResourceAsStream("service-connected.html"), MediaType.TEXT_HTML_TYPE).
                     status(200).
                     build();
         } catch (Exception e) {
