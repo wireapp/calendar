@@ -36,7 +36,7 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
     public RedisDataStoreFactory(Configuration.DB db, String botId) throws IOException {
         super(new File("/tmp"));
 
-        this.redis = new Redis(db.host, db.port, db.password);
+        this.redis = new Redis(db);
         this.botId = botId;
     }
 
@@ -94,10 +94,10 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
         private final Integer port;
         private final String password;
 
-        Redis(String host, int port, String password) {
-            this.host = host;
-            this.port = port;
-            this.password = password;
+        Redis(Configuration.DB db) {
+            this.host = db.host;
+            this.port = db.port;
+            this.password = db.password;
         }
 
         private static JedisPoolConfig buildPoolConfig() {
