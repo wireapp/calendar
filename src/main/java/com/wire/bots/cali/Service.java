@@ -20,6 +20,7 @@ package com.wire.bots.cali;
 
 import com.wire.bots.cali.resources.AuthResource;
 import com.wire.bots.cali.resources.NotificationResource;
+import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.Server;
 import com.wire.bots.sdk.crypto.CryptoDatabase;
@@ -31,6 +32,9 @@ import io.dropwizard.setup.Environment;
 
 public class Service extends Server<Config> {
     static Config CONFIG;
+    static ClientRepo repo;
+    private AlertManager alertManager;
+    private CommandManager commandManager;
 
     public static void main(String[] args) throws Exception {
         //System.loadLibrary("blender"); // Load native library at runtime
@@ -39,17 +43,21 @@ public class Service extends Server<Config> {
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
-        return new MessageHandler(repo, getStorageFactory(config));
+        return new MessageHandler(alertManager, commandManager, getStorageFactory(config));
     }
 
     @Override
     protected void initialize(Config config, Environment env) {
         CONFIG = config;
         env.jersey().setUrlPattern("/cali/*");
+
+        alertManager = new AlertManager(config.postgres);
+        commandManager = new CommandManager();
     }
 
     @Override
     protected void onRun(Config config, Environment env) {
+        Service.repo = super.repo;
         addResource(new AuthResource(repo), env);
         addResource(new NotificationResource(repo), env);
     }

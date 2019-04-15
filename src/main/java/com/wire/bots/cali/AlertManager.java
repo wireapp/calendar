@@ -20,35 +20,33 @@ class AlertManager {
     private final DateFormat dateFormat = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
-    private final ClientRepo repo;
     private final Database database;
 
-    AlertManager(Config.DB postgres, ClientRepo repo) {
-        this.repo = repo;
+    AlertManager(Config.DB postgres) {
         this.database = new Database(postgres);
-
-        crone();
     }
 
     boolean insertNewSubscriber(String botId) throws Exception {
         return database.insertSubscriber(botId);
     }
 
-    private void crone() {
+    void crone(final ClientRepo repo) {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 try {
                     ArrayList<String> subscribers = database.getSubscribers();
                     for (String botId : subscribers) {
-                        WireClient wireClient = repo.getWireClient(botId);
-                        if (wireClient == null) {
-                            database.unsubscribe(botId);
-                            continue;
+                        try (WireClient wireClient = repo.getClient(botId)) {
+                            if (wireClient == null) {
+                                database.unsubscribe(botId);
+                                continue;
+                            }
+                            fetchEvents(wireClient);
                         }
-                        fetchEvents(wireClient);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                     Logger.warning("crone: error: %s", e);
                 }
             }

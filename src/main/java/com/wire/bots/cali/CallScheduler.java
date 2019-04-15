@@ -1,22 +1,18 @@
 package com.wire.bots.cali;
 
-import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.tools.Logger;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class CallScheduler {
-    private final ClientRepo repo;
     private final Timer timer = new Timer();
     private static final PrettyTimeParser prettyTimeParser = new PrettyTimeParser(TimeZone.getTimeZone("CET"));
     private final Database database;
 
-    CallScheduler(Config.DB postgres, ClientRepo repo) {
-        this.repo = repo;
+    CallScheduler(Config.DB postgres) {
         this.database = new Database(postgres);
     }
 
@@ -43,8 +39,7 @@ public class CallScheduler {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    WireClient wireClient = repo.getWireClient(botId);
+                try (WireClient wireClient = Service.repo.getClient(botId)) {
                     wireClient.call("{\"version\":\"3.0\",\"type\":\"GROUPSTART\",\"sessid\":\"\",\"resp\":false}");
                     deleteSchedule(wireClient.getId());
                 } catch (Exception e) {
@@ -64,27 +59,26 @@ public class CallScheduler {
         Logger.info("Deleted schedule for bot: %s %s", botId, deleteSchedule);
     }
 
-    public boolean scheduleRecurrent(String botId, Date firstRun, int days) {
-        if (firstRun.getTime() < new Date().getTime())
-            return false;
-
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    WireClient wireClient = repo.getWireClient(botId);
-                    wireClient.call("{\"version\":\"3.0\",\"type\":\"GROUPSTART\",\"sessid\":\"\",\"resp\":false}");
-                } catch (Exception e) {
-                    Logger.warning("scheduleRecurrent. Bot: %s, scheduled: `%s`, error: %s",
-                            botId,
-                            firstRun,
-                            e);
-                }
-            }
-        }, firstRun, TimeUnit.DAYS.toMillis(days));
-
-        return true;
-    }
+//    public boolean scheduleRecurrent(String botId, Date firstRun, int days) {
+//        if (firstRun.getTime() < new Date().getTime())
+//            return false;
+//
+//        timer.scheduleAtFixedRate(new TimerTask() {
+//            @Override
+//            public void run() {
+//                try (WireClient wireClient = repo.getClient(botId)) {
+//                    wireClient.call("{\"version\":\"3.0\",\"type\":\"GROUPSTART\",\"sessid\":\"\",\"resp\":false}");
+//                } catch (Exception e) {
+//                    Logger.warning("scheduleRecurrent. Bot: %s, scheduled: `%s`, error: %s",
+//                            botId,
+//                            firstRun,
+//                            e);
+//                }
+//            }
+//        }, firstRun, TimeUnit.DAYS.toMillis(days));
+//
+//        return true;
+//    }
 
     static Date parse(String schedule) {
         List<DateGroup> dateGroups = prettyTimeParser.parseSyntax(schedule);

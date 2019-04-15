@@ -18,33 +18,24 @@
 
 package com.wire.bots.cali;
 
-import com.wire.blender.Blender;
-import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.MessageHandlerBase;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.factories.StorageFactory;
 import com.wire.bots.sdk.models.TextMessage;
 import com.wire.bots.sdk.server.model.NewBot;
 import com.wire.bots.sdk.server.model.User;
-import com.wire.bots.sdk.state.State;
 import com.wire.bots.sdk.tools.Logger;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-
 public class MessageHandler extends MessageHandlerBase {
-    private final ClientRepo repo;
-    private final StorageFactory storageFactory;
-    private final ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
+    private final StorageFactory storageF;
+    //private final ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
     private final AlertManager alertManager;
     private final CommandManager commandManager;
 
-    MessageHandler(ClientRepo repo, StorageFactory storageFactory) {
-        this.repo = repo;
-        this.storageFactory = storageFactory;
-        this.alertManager = new AlertManager(Service.CONFIG.postgres, repo);
-        commandManager = new CommandManager(repo);
+    MessageHandler(AlertManager alertManager, CommandManager commandManager, StorageFactory storageF) {
+        this.storageF = storageF;
+        this.alertManager = alertManager;
+        this.commandManager = commandManager;
     }
 
     @Override
@@ -86,7 +77,7 @@ public class MessageHandler extends MessageHandlerBase {
 
     @Override
     public void onCalling(WireClient client, String userId, String clientId, String content) {
-        String botId = client.getId();
+        //String botId = client.getId();
 //        Blender blender = getBlender(botId);
 //        blender.recvMessage(botId, userId, clientId, content);
     }
@@ -100,31 +91,30 @@ public class MessageHandler extends MessageHandlerBase {
         }
     }
 
-    private Blender getBlender(String botId) {
-        return blenders.computeIfAbsent(botId, k -> {
-            try {
-                String module = Service.CONFIG.getModule();
-                String ingress = Service.CONFIG.getIngress();
-                int portMin = Service.CONFIG.getPortMin();
-                int portMax = Service.CONFIG.getPortMax();
-
-                State storage = storageFactory.create(botId);
-                NewBot state = storage.getState();
-                Blender blender = new Blender();
-                blender.init(module, botId, state.client, ingress, portMin, portMax);
-                blender.registerListener(new CallListener(repo));
-                return blender;
-            } catch (Exception e) {
-                Logger.error(e.toString());
-                return null;
-            }
-        });
-    }
+//    private Blender getBlender(String botId) {
+//        return blenders.computeIfAbsent(botId, k -> {
+//            try {
+//                String module = Service.CONFIG.getModule();
+//                String ingress = Service.CONFIG.getIngress();
+//                int portMin = Service.CONFIG.getPortMin();
+//                int portMax = Service.CONFIG.getPortMax();
+//
+//                State storage = storageFactory.create(botId);
+//                NewBot state = storage.getState();
+//                Blender blender = new Blender();
+//                blender.init(module, botId, state.client, ingress, portMin, portMax);
+//                blender.registerListener(new CallListener(repo));
+//                return blender;
+//            } catch (Exception e) {
+//                Logger.error(e.toString());
+//                return null;
+//            }
+//        });
+//    }
 
     private User getOwner(WireClient client) throws Exception {
         String botId = client.getId();
-        NewBot state = storageFactory.create(botId).getState();
-        Collection<User> users = client.getUsers(Collections.singletonList(state.origin.id));
-        return users.stream().findFirst().get();
+        NewBot state = storageF.create(botId).getState();
+        return client.getUser(state.origin.id);
     }
 }

@@ -4,7 +4,6 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
-import com.wire.bots.sdk.ClientRepo;
 import com.wire.bots.sdk.WireClient;
 import com.wire.bots.sdk.assets.Picture;
 import com.wire.bots.sdk.models.AssetKey;
@@ -32,8 +31,8 @@ class CommandManager {
 
     private final CallScheduler callScheduler;
 
-    CommandManager(ClientRepo repo) {
-        this.callScheduler = new CallScheduler(Service.CONFIG.getPostgres(), repo);
+    CommandManager() {
+        this.callScheduler = new CallScheduler(Service.CONFIG.getPostgres());
         try {
             callScheduler.loadSchedules();
         } catch (Exception e) {
