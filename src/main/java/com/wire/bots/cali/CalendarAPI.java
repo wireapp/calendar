@@ -15,13 +15,16 @@ import com.google.api.client.util.store.RedisDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.*;
+import com.google.api.services.people.v1.PeopleService;
 import com.wire.bots.sdk.tools.Logger;
 import com.wire.bots.sdk.tools.Util;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -32,7 +35,7 @@ public class CalendarAPI {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
-    private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_READONLY);
+
     private static GoogleClientSecrets clientSecrets;
     private static ConcurrentHashMap<String, GoogleAuthorizationCodeFlow> flows = new ConcurrentHashMap<>();
     private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
@@ -75,6 +78,13 @@ public class CalendarAPI {
     public static Calendar getCalendarService(String botId) throws IOException {
         Credential credential = getFlow(botId).loadCredential(botId);
         return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+    }
+
+    public static PeopleService getPeopleService(String botId) throws IOException {
+        Credential credential = getFlow(botId).loadCredential(botId);
+        return new PeopleService.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
     }
@@ -194,7 +204,7 @@ public class CalendarAPI {
             DataStoreFactory factory = new RedisDataStoreFactory(Service.CONFIG.db, botId);
 
             flow = new GoogleAuthorizationCodeFlow.Builder(
-                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, CalendarScopes.all())
                     .setDataStoreFactory(factory)
                     .setAccessType("offline")
                     .setApprovalPrompt("force")

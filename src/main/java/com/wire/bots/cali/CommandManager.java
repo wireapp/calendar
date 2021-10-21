@@ -72,6 +72,9 @@ class CommandManager {
         } else if (command.startsWith(COMMAND_POLLY)) {
             String args = command.replace(COMMAND_POLLY, "").trim();
             scheduleCall(client, args);
+        } else if (command.startsWith("/remindme")) {
+            String args = command.replace("/remindme", "").trim();
+            scheduleReminder(client, args, sender);
         } else if (command.startsWith(COMMAND_CALI)) {
             String args = command.replace(COMMAND_CALI, "").trim();
             scheduleNewEvent(client, args);
@@ -190,7 +193,7 @@ class CommandManager {
             SimpleDateFormat format = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
             format.setTimeZone(TimeZone.getTimeZone("CET"));
 
-            boolean scheduled = callScheduler.schedule(botId, date);
+            boolean scheduled = callScheduler.scheduleCall(botId, date);
             if (scheduled) {
                 String schedule = date.toString();
                 callScheduler.saveSchedule(botId, schedule);
@@ -201,6 +204,32 @@ class CommandManager {
             }
         } else {
             client.sendText("I am sorry, I could not parse that.");
+        }
+    }
+
+    private void scheduleReminder(WireClient client, String text, String sender) throws Exception {
+        String botId = client.getId();
+        Date date = CallScheduler.parse(text);
+        if (date != null) {
+            SimpleDateFormat format = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
+            format.setTimeZone(TimeZone.getTimeZone("CET"));
+
+            final String strDate = CallScheduler.extractDate(text);
+
+            if (strDate != null)
+                text = text.replace(strDate, "");
+
+            boolean scheduled = callScheduler.scheduleReminder(botId, date, text, sender);
+            if (scheduled) {
+                String schedule = date.toString();
+                callScheduler.saveSchedule(botId, schedule);
+                client.sendDirectText("OK, I will remind you here at: " + format.format(date), sender);
+                Logger.info("Scheduled reminder for: `%s`, bot: %s", schedule, botId);
+            } else {
+                client.sendDirectText("I am sorry, but I could not schedule the reminder for: " + format.format(date), sender);
+            }
+        } else {
+            client.sendDirectText("I am sorry, I could not parse that.", sender);
         }
     }
 

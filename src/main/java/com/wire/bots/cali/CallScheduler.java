@@ -16,6 +16,14 @@ public class CallScheduler {
         this.database = new Database(postgres);
     }
 
+    static String extractDate(String schedule) {
+        List<DateGroup> dateGroups = prettyTimeParser.parseSyntax(schedule);
+        for (DateGroup dateGroup : dateGroups) {
+            return dateGroup.getText();
+        }
+        return null;
+    }
+
     void loadSchedules() throws Exception {
         ArrayList<String> subscribers = database.getSubscribers();
         for (String botId : subscribers) {
@@ -23,7 +31,7 @@ public class CallScheduler {
             if (schedule != null) {
                 Date date = parse(schedule);
                 if (date != null) {
-                    boolean scheduled = schedule(botId, date);
+                    boolean scheduled = scheduleCall(botId, date);
                     if (scheduled) {
                         Logger.info("Loaded Scheduled call for: `%s`, bot: %s", date, botId);
                     }
@@ -32,7 +40,7 @@ public class CallScheduler {
         }
     }
 
-    boolean schedule(String botId, Date date) {
+    boolean scheduleCall(String botId, Date date) {
         if (date.getTime() < new Date().getTime())
             return false;
 
@@ -88,6 +96,28 @@ public class CallScheduler {
             }
         }
         return null;
+    }
+
+    boolean scheduleReminder(String botId, Date date, String text, String sender) {
+        if (date.getTime() < new Date().getTime())
+            return false;
+
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try (WireClient wireClient = Service.repo.getClient(botId)) {
+                    wireClient.sendDirectText(text, sender);
+                    deleteSchedule(wireClient.getId());
+                } catch (Exception e) {
+                    Logger.warning("schedule. Bot: %s, scheduled: `%s`, error: %s",
+                            botId,
+                            date,
+                            e);
+                }
+            }
+        }, date);
+
+        return true;
     }
 
     void saveSchedule(String botId, String text) throws Exception {
