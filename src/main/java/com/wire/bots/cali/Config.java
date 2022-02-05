@@ -19,17 +19,17 @@
 package com.wire.bots.cali;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.wire.bots.sdk.Configuration;
+import com.wire.lithium.Configuration;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Config extends Configuration {
+    public String domain;
     public String secretPath;
     public String ingress;
     public int portMin;
     public int portMax;
     public String module;
-    public DB postgres;
-    
+
     public String getSecretPath() {
         return secretPath;
     }
@@ -48,9 +48,5 @@ public class Config extends Configuration {
 
     public String getModule() {
         return module;
-    }
-
-    public DB getPostgres() {
-        return postgres;
     }
 }

@@ -1,15 +1,18 @@
 package com.wire.bots.cali;
 
+import com.DAO.SubscribersDAO;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventReminder;
 import com.google.api.services.calendar.model.Events;
-import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.WireClient;
-import com.wire.bots.sdk.tools.Logger;
+import com.wire.lithium.ClientRepo;
+import com.wire.xenon.WireClient;
+import com.wire.xenon.assets.MessageText;
+import com.wire.xenon.assets.Ping;
+import com.wire.xenon.tools.Logger;
+import org.jdbi.v3.core.Jdbi;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -20,14 +23,15 @@ class AlertManager {
     private final DateFormat dateFormat = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
     private final Timer timer = new Timer();
     private final HashMap<String, Event> remindersMap = new HashMap<>();
-    private final Database database;
+    private final SubscribersDAO subscribersDAO;
 
-    AlertManager(Config.DB postgres) {
-        this.database = new Database(postgres);
+    AlertManager(Jdbi jdbi) {
+        subscribersDAO = jdbi.onDemand(SubscribersDAO.class);
     }
 
-    boolean insertNewSubscriber(String botId) throws Exception {
-        return database.insertSubscriber(botId);
+    boolean insertNewSubscriber(UUID botId) {
+        final int i = subscribersDAO.insertSubscriber(botId);
+        return i != 0;
     }
 
     void crone(final ClientRepo repo) {
@@ -35,11 +39,11 @@ class AlertManager {
             @Override
             public void run() {
                 try {
-                    ArrayList<String> subscribers = database.getSubscribers();
-                    for (String botId : subscribers) {
+                    ArrayList<UUID> subscribers = subscribersDAO.getSubscribers();
+                    for (UUID botId : subscribers) {
                         try (WireClient wireClient = repo.getClient(botId)) {
                             if (wireClient == null) {
-                                database.unsubscribe(botId);
+                                subscribersDAO.unsubscribe(botId);
                                 continue;
                             }
                             fetchEvents(wireClient);
@@ -55,8 +59,8 @@ class AlertManager {
 
     private void fetchEvents(final WireClient wireClient) {
         try {
-            String botId = wireClient.getId();
-            Events events = CalendarAPI.listEvents(botId, 1);
+            final UUID botId = wireClient.getId();
+            Events events = CalendarAPI.listEvents(botId.toString(), 1);
 
             for (final Event event : events.getItems()) {
                 try {
@@ -76,7 +80,7 @@ class AlertManager {
                 }
             }
         } catch (IOException e) {
-            // Logger.warning("AlertManager.fetchEvents: %s", e);
+            Logger.warning("AlertManager.fetchEvents: %s", e);
         }
     }
 
@@ -98,11 +102,11 @@ class AlertManager {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                String botId = wireClient.getId();
+                UUID botId = wireClient.getId();
                 try {
-                    Event event = CalendarAPI.getEvent(botId, eventId);
+                    Event event = CalendarAPI.getEvent(botId.toString(), eventId);
                     if (event != null) {
-                        boolean muted = database.isMuted(botId);
+                        boolean muted = subscribersDAO.isMuted(botId);
                         if (muted) {
                             Logger.info("scheduleReminder: %s Event: %s Muted", botId, event.getId());
                             return;
@@ -123,8 +127,8 @@ class AlertManager {
                                 event.getHtmlLink(),
                                 dateFormat.format(new Date(start + TimeUnit.MINUTES.toMillis(timeZoneShift))));
 
-                        wireClient.ping();
-                        wireClient.sendText(msg);
+                        wireClient.send(new Ping());
+                        wireClient.send(new MessageText(msg));
                     }
                 } catch (Exception e) {
                     Logger.warning("scheduleReminder: %s error: %s", botId, e);
@@ -133,7 +137,7 @@ class AlertManager {
         }, at);
     }
 
-    boolean removeSubscriber(String botId) throws SQLException {
-        return database.unsubscribe(botId);
+    boolean removeSubscriber(UUID botId) {
+        return 0 != subscribersDAO.unsubscribe(botId);
     }
 }

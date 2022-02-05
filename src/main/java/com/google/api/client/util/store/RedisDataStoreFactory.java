@@ -17,33 +17,25 @@ package com.google.api.client.util.store;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.util.Maps;
-import com.wire.bots.sdk.Configuration;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import com.wire.lithium.Configuration;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.time.Duration;
 import java.util.HashMap;
 
 public class RedisDataStoreFactory extends FileDataStoreFactory {
 
-    private final Redis redis;
-    private final String botId;
+    private final Configuration.Database database;
 
-    public RedisDataStoreFactory(Configuration.DB db, String botId) throws IOException {
+    public RedisDataStoreFactory(Configuration.Database database) throws IOException {
         super(new File("/tmp"));
-
-        this.redis = new Redis(db);
-        this.botId = botId;
+        this.database = database;
     }
 
     @Override
     protected <V extends Serializable> DataStore<V> createDataStore(String id) throws IOException {
-        String name = String.format("%s_%s", id, botId);
-        return new RedisDataStore<>(this, name);
+        return new RedisDataStore<>(this, id);
     }
 
     /**
@@ -52,7 +44,7 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
      *
      * @param <V> serializable type of the mapped value
      */
-    private class RedisDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
+    private static class RedisDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
         private final ObjectMapper objectMapper = new ObjectMapper();
         private final RedisDataStoreFactory dataStoreFactory;
 
@@ -60,7 +52,7 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
             super(dataStore, id);
             this.dataStoreFactory = dataStore;
 
-            String value = redis.get(id);
+            String value = getFromDB(id);
             // create new file (if necessary)
             if (value == null) {
                 keyValueMap = Maps.newHashMap();
@@ -75,77 +67,25 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
             }
         }
 
+        // todo
+        private String getFromDB(String id) {
+            return null;
+        }
+
+        private void saveToDB(String id, String s) {
+        }
+        // todo
+
+
         @Override
         void save() throws IOException {
             String s = objectMapper.writeValueAsString(keyValueMap);
-            redis.put(getId(), s);
+            saveToDB(getId(), s);
         }
 
         @Override
         public RedisDataStoreFactory getDataStoreFactory() {
             return dataStoreFactory;
         }
-    }
-
-    private static class Redis {
-        private static final int TIMEOUT = 5000;
-        private static JedisPool pool;
-        private final String host;
-        private final Integer port;
-        private final String password;
-
-        Redis(Configuration.DB db) {
-            this.host = db.host;
-            this.port = db.port;
-            this.password = db.password;
-        }
-
-        private static JedisPoolConfig buildPoolConfig() {
-            final JedisPoolConfig poolConfig = new JedisPoolConfig();
-            poolConfig.setMaxTotal(1100);
-            poolConfig.setMaxIdle(16);
-            poolConfig.setMinIdle(16);
-            poolConfig.setTestOnBorrow(true);
-            poolConfig.setTestOnReturn(true);
-            poolConfig.setTestWhileIdle(true);
-            poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60).toMillis());
-            poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30).toMillis());
-            poolConfig.setNumTestsPerEvictionRun(3);
-            poolConfig.setBlockWhenExhausted(true);
-            return poolConfig;
-        }
-
-        private static JedisPool pool(String host, Integer port, String password) {
-            if (pool == null) {
-                JedisPoolConfig poolConfig = buildPoolConfig();
-                if (password != null && port != null)
-                    pool = new JedisPool(poolConfig, host, port, TIMEOUT, password);
-                else if (port != null)
-                    pool = new JedisPool(poolConfig, host, port);
-                else
-                    pool = new JedisPool(poolConfig, host);
-
-            }
-            return pool;
-        }
-
-        String get(String id) {
-            try (Jedis jedis = getConnection()) {
-                String key = String.format("cali_%s", id);
-                return jedis.get(key);
-            }
-        }
-
-        void put(String id, String data) {
-            try (Jedis jedis = getConnection()) {
-                String key = String.format("cali_%s", id);
-                jedis.set(key, data);
-            }
-        }
-
-        private Jedis getConnection() {
-            return pool(host, port, password).getResource();
-        }
-
     }
 }

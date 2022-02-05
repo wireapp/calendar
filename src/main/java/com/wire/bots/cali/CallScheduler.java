@@ -1,7 +1,11 @@
 package com.wire.bots.cali;
 
-import com.wire.bots.sdk.WireClient;
-import com.wire.bots.sdk.tools.Logger;
+import com.DAO.SubscribersDAO;
+import com.wire.xenon.WireClient;
+import com.wire.xenon.assets.Calling;
+import com.wire.xenon.assets.MessageText;
+import com.wire.xenon.tools.Logger;
+import org.jdbi.v3.core.Jdbi;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
@@ -10,10 +14,10 @@ import java.util.*;
 public class CallScheduler {
     private final Timer timer = new Timer();
     private static final PrettyTimeParser prettyTimeParser = new PrettyTimeParser(TimeZone.getTimeZone("CET"));
-    private final Database database;
+    private final SubscribersDAO subscribersDAO;
 
-    CallScheduler(Config.DB postgres) {
-        this.database = new Database(postgres);
+    CallScheduler(Jdbi jdbi) {
+        subscribersDAO = jdbi.onDemand(SubscribersDAO.class);
     }
 
     static String extractDate(String schedule) {
@@ -24,10 +28,10 @@ public class CallScheduler {
         return null;
     }
 
-    void loadSchedules() throws Exception {
-        ArrayList<String> subscribers = database.getSubscribers();
-        for (String botId : subscribers) {
-            String schedule = database.getSchedule(botId);
+    void loadSchedules() {
+        ArrayList<UUID> subscribers = subscribersDAO.getSubscribers();
+        for (UUID botId : subscribers) {
+            String schedule = subscribersDAO.getSchedule(botId);
             if (schedule != null) {
                 Date date = parse(schedule);
                 if (date != null) {
@@ -40,7 +44,7 @@ public class CallScheduler {
         }
     }
 
-    boolean scheduleCall(String botId, Date date) {
+    boolean scheduleCall(UUID botId, Date date) {
         if (date.getTime() < new Date().getTime())
             return false;
 
@@ -48,7 +52,7 @@ public class CallScheduler {
             @Override
             public void run() {
                 try (WireClient wireClient = Service.repo.getClient(botId)) {
-                    wireClient.call("{\"version\":\"3.0\",\"type\":\"GROUPSTART\",\"sessid\":\"\",\"resp\":false}");
+                    wireClient.send(new Calling("{\"version\":\"3.0\",\"type\":\"GROUPSTART\",\"sessid\":\"\",\"resp\":false}"));
                     deleteSchedule(wireClient.getId());
                 } catch (Exception e) {
                     Logger.warning("schedule. Bot: %s, scheduled: `%s`, error: %s",
@@ -62,8 +66,8 @@ public class CallScheduler {
         return true;
     }
 
-    private void deleteSchedule(String botId) throws Exception {
-        boolean deleteSchedule = database.deleteSchedule(botId);
+    private void deleteSchedule(UUID botId) {
+        boolean deleteSchedule = subscribersDAO.setSchedule(botId, null) != 0;
         Logger.info("Deleted schedule for bot: %s %s", botId, deleteSchedule);
     }
 
@@ -98,7 +102,7 @@ public class CallScheduler {
         return null;
     }
 
-    boolean scheduleReminder(String botId, Date date, String text, String sender) {
+    boolean scheduleReminder(UUID botId, Date date, String text, UUID sender) {
         if (date.getTime() < new Date().getTime())
             return false;
 
@@ -106,7 +110,7 @@ public class CallScheduler {
             @Override
             public void run() {
                 try (WireClient wireClient = Service.repo.getClient(botId)) {
-                    wireClient.sendDirectText(text, sender);
+                    wireClient.send(new MessageText(text), sender);
                     deleteSchedule(wireClient.getId());
                 } catch (Exception e) {
                     Logger.warning("schedule. Bot: %s, scheduled: `%s`, error: %s",
@@ -120,13 +124,13 @@ public class CallScheduler {
         return true;
     }
 
-    void saveSchedule(String botId, String text) throws Exception {
-        boolean setSchedule = database.setSchedule(botId, text);
+    void saveSchedule(UUID botId, String text) {
+        boolean setSchedule = subscribersDAO.setSchedule(botId, text) != 0;
         Logger.info("Set schedule for bot: %s %s", botId, setSchedule);
     }
 
-    boolean setMuted(String botId, boolean muted) throws Exception {
+    boolean setMuted(UUID botId, boolean muted) {
         Logger.info("Set Muted to: %s for bot: %s", botId, muted);
-        return database.setMuted(botId, muted);
+        return 0 != subscribersDAO.setMuted(botId, muted);
     }
 }

@@ -4,21 +4,26 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
-import com.wire.bots.sdk.WireClient;
-import com.wire.bots.sdk.assets.Picture;
-import com.wire.bots.sdk.models.AssetKey;
-import com.wire.bots.sdk.server.model.User;
-import com.wire.bots.sdk.tools.Logger;
+import com.wire.xenon.WireClient;
+import com.wire.xenon.assets.LinkPreview;
+import com.wire.xenon.assets.MessageText;
+import com.wire.xenon.assets.Picture;
+import com.wire.xenon.backend.models.User;
+import com.wire.xenon.models.AssetKey;
+import com.wire.xenon.tools.Logger;
+import org.jdbi.v3.core.Jdbi;
 
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static com.wire.xenon.tools.Util.getResource;
+
 class CommandManager {
-    private static final String PREVIEW_PIC_URL = "https://i.imgur.com/v9FQ8ba.png";
     private static final String COMMAND_LIST = "/list";
     private static final String COMMAND_POLLY = "/polly";
     private static final String COMMAND_CALI = "/cali";
@@ -28,11 +33,12 @@ class CommandManager {
     private static final String COMMAND_MUTE = "/mute";
     private static final String COMMAND_UNMUTE = "/unmute";
     private static final String COMMAND_HELP = "/help";
+    public static final String REMINDME = "/remindme";
 
     private final CallScheduler callScheduler;
 
-    CommandManager() {
-        this.callScheduler = new CallScheduler(Service.CONFIG.getPostgres());
+    CommandManager(Jdbi jdbi) {
+        this.callScheduler = new CallScheduler(jdbi);
         try {
             callScheduler.loadSchedules();
         } catch (Exception e) {
@@ -40,40 +46,40 @@ class CommandManager {
         }
     }
 
-    void processCommand(WireClient client, String sender, String command) throws Exception {
+    void processCommand(WireClient client, UUID sender, String command) throws Exception {
         command = command.toLowerCase().trim();
 
         if (command.startsWith(COMMAND_LIST)) {
             String args = command.replace(COMMAND_LIST, "").trim();
             int maxResults = parseInt(args, 5);
-            Events events = CalendarAPI.listEvents(client.getId(), maxResults);
+            Events events = CalendarAPI.listEvents(client.getId().toString(), maxResults);
             if (events.getItems().isEmpty()) {
-                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
+                client.send(new MessageText(NO_EVENTS_SCHEDULED_SO_FAR), sender);
             } else {
                 String msg = printEvents(events, "Here are your upcoming events:");
-                client.sendDirectText(msg, sender);
+                client.send(new MessageText(msg), sender);
             }
         } else if (command.equals(COMMAND_TODAY)) {
-            Events events = listEventsToday(client.getId());
+            Events events = listEventsToday(client.getId().toString());
             if (events.getItems().isEmpty()) {
-                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
+                client.send(new MessageText(NO_EVENTS_SCHEDULED_SO_FAR), sender);
             } else {
                 String msg = printEvents(events, "Today’s events:");
-                client.sendDirectText(msg, sender);
+                client.send(new MessageText(msg), sender);
             }
         } else if (command.equals(COMMAND_TOMORROW)) {
-            Events events = listEventsTomorrow(client.getId());
+            Events events = listEventsTomorrow(client.getId().toString());
             if (events.getItems().isEmpty()) {
-                client.sendDirectText(NO_EVENTS_SCHEDULED_SO_FAR, sender);
+                client.send(new MessageText(NO_EVENTS_SCHEDULED_SO_FAR), sender);
             } else {
                 String msg = printEvents(events, "Tomorrow’s events:");
-                client.sendDirectText(msg, sender);
+                client.send(new MessageText(msg), sender);
             }
         } else if (command.startsWith(COMMAND_POLLY)) {
             String args = command.replace(COMMAND_POLLY, "").trim();
             scheduleCall(client, args);
-        } else if (command.startsWith("/remindme")) {
-            String args = command.replace("/remindme", "").trim();
+        } else if (command.startsWith(REMINDME)) {
+            String args = command.replace(REMINDME, "").trim();
             scheduleReminder(client, args, sender);
         } else if (command.startsWith(COMMAND_CALI)) {
             String args = command.replace(COMMAND_CALI, "").trim();
@@ -87,7 +93,7 @@ class CommandManager {
         }
     }
 
-    private void showHelp(WireClient client, String sender) throws Exception {
+    private void showHelp(WireClient client, UUID sender) throws Exception {
         String msg = "Here's the list of my controls:\n" +
                 "\n" +
                 "For a quick overview of your upcoming events, type: \n" +
@@ -96,12 +102,19 @@ class CommandManager {
                 "For your daily schedule use: \n" +
                 "`/today` or `/tomorrow`\n" +
                 "—\n" +
-                "You can turn on/off my event notifications with: \n" +
-                "`/mute` and `/unmute`\n" +
+                "To setup a reminder: \n" +
+                "`/remindme Go to bed at 10pm`\n" +
                 "—\n" +
-                "By the way, commands only work when placed at the beginning of a message.\n" +
-                "Make sure there is no space between the ”/“ character and the command.";
-        client.sendDirectText(msg, sender);
+                "To initiate a call at specific time: \n" +
+                "`/polly tomorrow at 9`\n" +
+                "—\n" +
+                "To create a new Google event: \n" +
+                "`/cali Board meeting with alan@wire.com morten@wire.com on Monday 2pm`\n" +
+                "—\n" +
+                "You can turn on/off my event notifications with: \n" +
+                "`/mute` and `/unmute`";
+
+        client.send(new MessageText(msg), sender);
     }
 
     private void setMute(WireClient client, boolean muted) throws Exception {
@@ -110,10 +123,10 @@ class CommandManager {
             if (muted) {
                 String msg = "Notifications about your events are now **off**. \n" +
                         "If you want to turn them back on, type: `/unmute` .";
-                client.sendText(msg);
+                client.send(new MessageText(msg));
             } else {
                 String msg = "Notifications about your events are now **on**.";
-                client.sendText(msg);
+                client.send(new MessageText(msg));
             }
         } else {
             Logger.warning("Failed to invoke setMute: %s", client.getId());
@@ -122,12 +135,12 @@ class CommandManager {
 
     void showAuthLink(WireClient client, User origin) throws Exception {
         try {
-            String authUrl = CalendarAPI.getAuthUrl(client.getId());
-            Picture preview = uploadPreview(client);
-            client.sendDirectLinkPreview(authUrl, "Sign in - Google Accounts", preview, origin.id);
+            String authUrl = CalendarAPI.getAuthUrl(client.getId().toString());
+            LinkPreview linkPreview = new LinkPreview(authUrl, "Sign in - Google Accounts", uploadPreview(client));
+            client.send(linkPreview);
         } catch (Exception e) {
             Logger.error("showAuthLink: bot: %s error: %s", client.getId(), e);
-            client.sendText("Something went wrong :(.");
+            client.send(new MessageText("Something went wrong :(."));
         }
     }
 
@@ -165,29 +178,29 @@ class CommandManager {
 
     private void scheduleNewEvent(WireClient client, String args) throws Exception {
         try {
-            Event event = CalendarAPI.addEvent(client.getId(), args);
+            Event event = CalendarAPI.addEvent(client.getId().toString(), args);
             if (event == null) {
-                client.sendText("Sorry, I did not get that.");
+                client.send(new MessageText("Sorry, I did not get that."));
                 return;
             }
 
             DateFormat format = new SimpleDateFormat("EEEEE, dd MMMMM 'at' HH:mm");
             DateTime dateTime = event.getStart().getDateTime();
             long value = dateTime.getValue() + TimeUnit.MINUTES.toMillis(dateTime.getTimeZoneShift());
-            String s = String.format("I've created new event for you:\n" +
-                            "**%s** on %s\n%s",
+            String msg = String.format("Sure! I've created new [event](%s) for you:\n" +
+                            "**%s** on %s",
+                    event.getHtmlLink(),
                     event.getSummary(),
-                    format.format(new Date(value)),
-                    event.getHtmlLink());
-            client.sendText(s);
+                    format.format(new Date(value)));
+            client.send(new MessageText(msg));
         } catch (Exception e) {
             Logger.warning("scheduleNewEvent: %s", e.getMessage());
-            client.sendText("Something went wrong :(.");
+            client.send(new MessageText("Something went wrong :(."));
         }
     }
 
     private void scheduleCall(WireClient client, String text) throws Exception {
-        String botId = client.getId();
+        UUID botId = client.getId();
         Date date = CallScheduler.parse(text);
         if (date != null) {
             SimpleDateFormat format = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
@@ -197,48 +210,54 @@ class CommandManager {
             if (scheduled) {
                 String schedule = date.toString();
                 callScheduler.saveSchedule(botId, schedule);
-                client.sendText("OK, I will start the call here at: " + format.format(date));
+                client.send(new MessageText("OK, I will start the call here at: " + format.format(date)));
                 Logger.info("Scheduled call for: `%s`, bot: %s", schedule, botId);
             } else {
-                client.sendText("I am sorry, but I could not schedule the call for: " + format.format(date));
+                client.send(new MessageText("I am sorry, but I could not schedule the call for: " + format.format(date)));
             }
         } else {
-            client.sendText("I am sorry, I could not parse that.");
+            client.send(new MessageText("I am sorry, I could not parse that."));
         }
     }
 
-    private void scheduleReminder(WireClient client, String text, String sender) throws Exception {
-        String botId = client.getId();
+    private void scheduleReminder(WireClient client, String text, UUID sender) throws Exception {
+        UUID botId = client.getId();
         Date date = CallScheduler.parse(text);
         if (date != null) {
-            SimpleDateFormat format = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
-            format.setTimeZone(TimeZone.getTimeZone("CET"));
+            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm', 'EEEE, MMMMM d, yyyy");
+            dateFormat.setTimeZone(TimeZone.getTimeZone("CET"));
 
             final String strDate = CallScheduler.extractDate(text);
 
             if (strDate != null)
-                text = text.replace(strDate, "");
+                text = text.replace(strDate, "").trim();
 
             boolean scheduled = callScheduler.scheduleReminder(botId, date, text, sender);
             if (scheduled) {
-                String schedule = date.toString();
-                callScheduler.saveSchedule(botId, schedule);
-                client.sendDirectText("OK, I will remind you here at: " + format.format(date), sender);
-                Logger.info("Scheduled reminder for: `%s`, bot: %s", schedule, botId);
+                final String msg = String.format("OK, I will remind you here about: **%s**\nat: %s",
+                        text,
+                        dateFormat.format(date));
+
+                client.send(new MessageText(msg), sender);
+
+                callScheduler.saveSchedule(botId, date.toString());
+
+                Logger.info("Scheduled reminder for: `%s`, bot: %s", date, botId);
             } else {
-                client.sendDirectText("I am sorry, but I could not schedule the reminder for: " + format.format(date), sender);
+                client.send(new MessageText("I'm sorry, but I could not schedule a reminder for: " + dateFormat.format(date))
+                        , sender);
             }
         } else {
-            client.sendDirectText("I am sorry, I could not parse that.", sender);
+            client.send(new MessageText("I am sorry, I could not parse that."), sender);
         }
     }
 
     private Picture uploadPreview(WireClient client) throws Exception {
-        Picture preview = new Picture(PREVIEW_PIC_URL);
+        Picture preview = new Picture(getResource("icon.png"));
         preview.setPublic(true);
 
         AssetKey assetKey = client.uploadAsset(preview);
-        preview.setAssetKey(assetKey.key);
+        preview.setAssetKey(assetKey.id);
         return preview;
     }
 

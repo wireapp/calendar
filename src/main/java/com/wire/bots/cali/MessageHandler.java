@@ -18,17 +18,20 @@
 
 package com.wire.bots.cali;
 
-import com.wire.bots.sdk.MessageHandlerBase;
-import com.wire.bots.sdk.WireClient;
-import com.wire.bots.sdk.factories.StorageFactory;
-import com.wire.bots.sdk.models.TextMessage;
-import com.wire.bots.sdk.server.model.NewBot;
-import com.wire.bots.sdk.server.model.User;
-import com.wire.bots.sdk.tools.Logger;
+import com.wire.xenon.MessageHandlerBase;
+import com.wire.xenon.WireClient;
+import com.wire.xenon.assets.MessageText;
+import com.wire.xenon.backend.models.NewBot;
+import com.wire.xenon.backend.models.SystemMessage;
+import com.wire.xenon.backend.models.User;
+import com.wire.xenon.factories.StorageFactory;
+import com.wire.xenon.models.TextMessage;
+import com.wire.xenon.tools.Logger;
+
+import java.util.UUID;
 
 public class MessageHandler extends MessageHandlerBase {
     private final StorageFactory storageF;
-    //private final ConcurrentHashMap<String, Blender> blenders = new ConcurrentHashMap<>();
     private final AlertManager alertManager;
     private final CommandManager commandManager;
 
@@ -44,10 +47,10 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
-    public boolean onNewBot(NewBot newBot) {
+    public boolean onNewBot(NewBot newBot, String accessToken) {
         try {
-            boolean insertNewSubscriber = alertManager.insertNewSubscriber(newBot.id);
-            Logger.info("onNewBot: bot: %s, user: %s %s", newBot.id, newBot.origin.id, insertNewSubscriber);
+            final boolean b = alertManager.insertNewSubscriber(newBot.id);
+            Logger.info("onNewBot: bot: %s, user: %s %s", newBot.id, newBot.origin.id, b);
         } catch (Exception e) {
             Logger.error("onNewBot: bot: %s, error: %s", newBot.id, e);
         }
@@ -55,10 +58,10 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
-    public void onNewConversation(final WireClient client) {
+    public void onNewConversation(WireClient client, SystemMessage message) {
         try {
-            client.sendText("Hello!\n" +
-                    "Thank you for adding me here. Follow this link to connect me to one of your calendars.");
+            client.send(new MessageText("Hello!\n" +
+                    "Thank you for adding me here. Follow this link to connect me to one of your calendars."));
             commandManager.showAuthLink(client, getOwner(client));
         } catch (Exception e) {
             Logger.warning("onNewConversation: %s %s", client.getId(), e);
@@ -66,20 +69,13 @@ public class MessageHandler extends MessageHandlerBase {
     }
 
     @Override
-    public void onBotRemoved(String botId) {
+    public void onBotRemoved(UUID botId, SystemMessage msg) {
         try {
             boolean remove = alertManager.removeSubscriber(botId);
             Logger.info("onBotRemoved. Bot: %s %s", botId, remove);
         } catch (Exception e) {
             Logger.error("onBotRemoved: %s %s", botId, e);
         }
-    }
-
-    @Override
-    public void onCalling(WireClient client, String userId, String clientId, String content) {
-        //String botId = client.getId();
-//        Blender blender = getBlender(botId);
-//        blender.recvMessage(botId, userId, clientId, content);
     }
 
     @Override
@@ -91,29 +87,8 @@ public class MessageHandler extends MessageHandlerBase {
         }
     }
 
-//    private Blender getBlender(String botId) {
-//        return blenders.computeIfAbsent(botId, k -> {
-//            try {
-//                String module = Service.CONFIG.getModule();
-//                String ingress = Service.CONFIG.getIngress();
-//                int portMin = Service.CONFIG.getPortMin();
-//                int portMax = Service.CONFIG.getPortMax();
-//
-//                State storage = storageFactory.create(botId);
-//                NewBot state = storage.getState();
-//                Blender blender = new Blender();
-//                blender.init(module, botId, state.client, ingress, portMin, portMax);
-//                blender.registerListener(new CallListener(repo));
-//                return blender;
-//            } catch (Exception e) {
-//                Logger.error(e.toString());
-//                return null;
-//            }
-//        });
-//    }
-
     private User getOwner(WireClient client) throws Exception {
-        String botId = client.getId();
+        final UUID botId = client.getId();
         NewBot state = storageF.create(botId).getState();
         return client.getUser(state.origin.id);
     }

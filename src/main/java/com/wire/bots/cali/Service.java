@@ -20,14 +20,9 @@ package com.wire.bots.cali;
 
 import com.wire.bots.cali.resources.AuthResource;
 import com.wire.bots.cali.resources.NotificationResource;
-import com.wire.bots.sdk.ClientRepo;
-import com.wire.bots.sdk.MessageHandlerBase;
-import com.wire.bots.sdk.Server;
-import com.wire.bots.sdk.crypto.CryptoDatabase;
-import com.wire.bots.sdk.crypto.storage.RedisStorage;
-import com.wire.bots.sdk.factories.CryptoFactory;
-import com.wire.bots.sdk.factories.StorageFactory;
-import com.wire.bots.sdk.state.RedisState;
+import com.wire.lithium.ClientRepo;
+import com.wire.lithium.Server;
+import com.wire.xenon.MessageHandlerBase;
 import io.dropwizard.setup.Environment;
 
 public class Service extends Server<Config> {
@@ -37,13 +32,12 @@ public class Service extends Server<Config> {
     private CommandManager commandManager;
 
     public static void main(String[] args) throws Exception {
-        //System.loadLibrary("blender"); // Load native library at runtime
         new Service().run(args);
     }
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
-        return new MessageHandler(alertManager, commandManager, getStorageFactory(config));
+        return new MessageHandler(alertManager, commandManager, getStorageFactory());
     }
 
     @Override
@@ -51,27 +45,14 @@ public class Service extends Server<Config> {
         CONFIG = config;
         env.jersey().setUrlPattern("/cali/*");
 
-        alertManager = new AlertManager(config.postgres);
-        commandManager = new CommandManager();
+        alertManager = new AlertManager(jdbi);
+        commandManager = new CommandManager(jdbi);
     }
 
     @Override
     protected void onRun(Config config, Environment env) {
         Service.repo = super.repo;
-        addResource(new AuthResource(repo), env);
-        addResource(new NotificationResource(repo), env);
-    }
-
-    @Override
-    protected StorageFactory getStorageFactory(Config config) {
-        return botId -> new RedisState(botId, config.db);
-    }
-
-    @Override
-    protected CryptoFactory getCryptoFactory(Config config) {
-        return (botId) -> new CryptoDatabase(botId, new RedisStorage(
-                config.db.host,
-                config.db.port,
-                config.db.password));
+        addResource(new AuthResource(repo));
+        addResource(new NotificationResource(repo));
     }
 }

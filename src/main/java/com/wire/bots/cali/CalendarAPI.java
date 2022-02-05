@@ -1,7 +1,6 @@
 package com.wire.bots.cali;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.DataStoreCredentialRefreshListener;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
@@ -16,16 +15,16 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.*;
 import com.google.api.services.people.v1.PeopleService;
-import com.wire.bots.sdk.tools.Logger;
-import com.wire.bots.sdk.tools.Util;
 import org.ocpsoft.prettytime.nlp.PrettyTimeParser;
 import org.ocpsoft.prettytime.nlp.parse.DateGroup;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,27 +34,32 @@ public class CalendarAPI {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
-
+    private static GoogleAuthorizationCodeFlow flow;
     private static GoogleClientSecrets clientSecrets;
-    private static ConcurrentHashMap<String, GoogleAuthorizationCodeFlow> flows = new ConcurrentHashMap<>();
+
     private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
             Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", Pattern.CASE_INSENSITIVE);
 
     static {
-        File secret = new File(Service.CONFIG.getSecretPath());
-        if (!secret.exists())
-            Logger.warning(secret.getAbsolutePath() + " does not exist");
-
         try (InputStream in = new FileInputStream(Service.CONFIG.getSecretPath())) {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+
+            DataStoreFactory factory = new RedisDataStoreFactory(Service.CONFIG.database);
+
+            flow = new GoogleAuthorizationCodeFlow.Builder(
+                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, CalendarScopes.all())
+                    .setDataStoreFactory(factory)
+                    .setAccessType("offline")
+                    .setApprovalPrompt("force")
+                    //.addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
+                    .build();
         } catch (Exception t) {
             t.printStackTrace();
         }
     }
 
-    static String getAuthUrl(String botId) throws IOException {
-        GoogleAuthorizationCodeFlow flow = getFlow(botId);
+    static String getAuthUrl(String botId) {
         return flow.newAuthorizationUrl()
                 .setRedirectUri(getRedirect())
                 .setState(botId)
@@ -63,11 +67,10 @@ public class CalendarAPI {
     }
 
     private static String getRedirect() {
-        return String.format("https://services.%s/cali/user/auth/google_oauth2/callback", Util.getDomain());
+        return String.format("https://%s/cali/user/auth/google_oauth2/callback", Service.CONFIG.domain);
     }
 
     public static Credential processAuthCode(String botId, String code) throws IOException {
-        GoogleAuthorizationCodeFlow flow = getFlow(botId);
         GoogleTokenResponse response = flow.newTokenRequest(code)
                 .setRedirectUri(getRedirect())
                 .execute();
@@ -76,14 +79,14 @@ public class CalendarAPI {
     }
 
     public static Calendar getCalendarService(String botId) throws IOException {
-        Credential credential = getFlow(botId).loadCredential(botId);
+        Credential credential = flow.loadCredential(botId);
         return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
     }
 
     public static PeopleService getPeopleService(String botId) throws IOException {
-        Credential credential = getFlow(botId).loadCredential(botId);
+        Credential credential = flow.loadCredential(botId);
         return new PeopleService.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
@@ -137,7 +140,7 @@ public class CalendarAPI {
         channel.setId(botId);
         channel.setKind("api#channel");
         channel.setType("web_hook");
-        channel.setAddress(String.format("https://services.%s/cali/notifications", Util.getDomain()));
+        channel.setAddress(String.format("https://%s/cali/notifications", Service.CONFIG.domain));
 
         Calendar.Events.Watch watch = getCalendarService(botId)
                 .events()
@@ -198,23 +201,6 @@ public class CalendarAPI {
                 .execute();
     }
 
-    private static GoogleAuthorizationCodeFlow getFlow(String botId) throws IOException {
-        GoogleAuthorizationCodeFlow flow = flows.get(botId);
-        if (flow == null) {
-            DataStoreFactory factory = new RedisDataStoreFactory(Service.CONFIG.db, botId);
-
-            flow = new GoogleAuthorizationCodeFlow.Builder(
-                    HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, CalendarScopes.all())
-                    .setDataStoreFactory(factory)
-                    .setAccessType("offline")
-                    .setApprovalPrompt("force")
-                    .addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
-                    .build();
-            flows.put(botId, flow);
-        }
-        return flow;
-    }
-
     private static int getTimeZoneShift(String botId) {
         try {
             Calendar service = getCalendarService(botId);
@@ -229,7 +215,6 @@ public class CalendarAPI {
 
             return events.getItems().get(0).getStart().getDateTime().getTimeZoneShift();
         } catch (Exception e) {
-            Logger.warning("getTimeZoneShift: %s", e.getMessage());
             return 0;
         }
     }
