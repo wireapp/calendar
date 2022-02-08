@@ -7,7 +7,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.client.util.store.DataStoreFactory;
 import com.google.api.client.util.store.RedisDataStoreFactory;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 
 public class CalendarAPI {
     private static final String APPLICATION_NAME = "Wire Cali Bot";
-    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
     private static GoogleAuthorizationCodeFlow flow;

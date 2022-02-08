@@ -26,11 +26,8 @@ import java.util.HashMap;
 
 public class RedisDataStoreFactory extends FileDataStoreFactory {
 
-    private final Configuration.Database database;
-
     public RedisDataStoreFactory(Configuration.Database database) throws IOException {
         super(new File("/tmp"));
-        this.database = database;
     }
 
     @Override
@@ -76,9 +73,8 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
         }
         // todo
 
-
         @Override
-        void save() throws IOException {
+        public void save() throws IOException {
             String s = objectMapper.writeValueAsString(keyValueMap);
             saveToDB(getId(), s);
         }

@@ -6,7 +6,7 @@ server:
   requestLog:
       appenders: []
 
-auth: ${WIRE_CALI_SERVICE_TOKEN}   # Service's auth token
+token: ${SERVICE_TOKEN:-}   # Service's auth token
 
 swagger:
   resourcePackage: com.wire.bots.sdk.server.resources
@@ -15,14 +15,11 @@ swagger:
     - http
     - https
 
-db:
-  host: localhost
-  port: 6379
-
-postgres:
-  host: localhost
-  user: ${POSTGRES_USER}
-  password: ${POSTGRES_PASSWORD}
+database:
+  driverClass: org.postgresql.Driver
+  user: ${DB_USER:-}
+  password: ${DB_PASSWORD:-}
+  url: ${DB_URL:-jdbc:postgresql://localhost/cali}
 
 module: mixer
 ingress: localhost
