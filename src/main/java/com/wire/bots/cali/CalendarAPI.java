@@ -10,7 +10,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.client.util.store.DataStoreFactory;
-import com.google.api.client.util.store.RedisDataStoreFactory;
+import com.google.api.client.util.store.PostgresDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.*;
@@ -45,7 +45,7 @@ public class CalendarAPI {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
-            DataStoreFactory factory = new RedisDataStoreFactory(Service.CONFIG.database);
+            DataStoreFactory factory = new PostgresDataStoreFactory(Service.service.getJdbi());
 
             flow = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, CalendarScopes.all())

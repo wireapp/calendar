@@ -24,10 +24,12 @@ import com.wire.lithium.ClientRepo;
 import com.wire.lithium.Server;
 import com.wire.xenon.MessageHandlerBase;
 import io.dropwizard.setup.Environment;
+import org.jdbi.v3.core.Jdbi;
 
 public class Service extends Server<Config> {
     static Config CONFIG;
     static ClientRepo repo;
+    static Service service;
     private AlertManager alertManager;
     private CommandManager commandManager;
 
@@ -43,6 +45,7 @@ public class Service extends Server<Config> {
     @Override
     protected void initialize(Config config, Environment env) {
         CONFIG = config;
+        service = this;
         env.jersey().setUrlPattern("/cali/*");
 
         alertManager = new AlertManager(jdbi);

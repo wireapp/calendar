@@ -14,25 +14,27 @@
 
 package com.google.api.client.util.store;
 
+import com.DAO.SubscribersDAO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.util.Maps;
-import com.wire.lithium.Configuration;
+import com.wire.xenon.tools.Logger;
+import org.jdbi.v3.core.Jdbi;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.UUID;
 
-public class RedisDataStoreFactory extends FileDataStoreFactory {
+public class PostgresDataStoreFactory extends AbstractDataStoreFactory {
+    SubscribersDAO subscribersDAO;
 
-    public RedisDataStoreFactory(Configuration.Database database) throws IOException {
-        super(new File("/tmp"));
+    public PostgresDataStoreFactory(Jdbi jdbi) {
+        subscribersDAO = jdbi.onDemand(SubscribersDAO.class);
     }
 
     @Override
     protected <V extends Serializable> DataStore<V> createDataStore(String id) throws IOException {
-        return new RedisDataStore<>(this, id);
+        return new PostgresDataStore<>(this, subscribersDAO, id);
     }
 
     /**
@@ -41,47 +43,36 @@ public class RedisDataStoreFactory extends FileDataStoreFactory {
      *
      * @param <V> serializable type of the mapped value
      */
-    private static class RedisDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
+    private static class PostgresDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
         private final ObjectMapper objectMapper = new ObjectMapper();
-        private final RedisDataStoreFactory dataStoreFactory;
+        private final SubscribersDAO subscribersDAO;
 
-        RedisDataStore(RedisDataStoreFactory dataStore, String id) throws IOException {
+        PostgresDataStore(PostgresDataStoreFactory dataStore, SubscribersDAO subscribersDAO, String id) throws IOException {
             super(dataStore, id);
-            this.dataStoreFactory = dataStore;
+            this.subscribersDAO = subscribersDAO;
 
-            String value = getFromDB(id);
+            UUID botId = UUID.fromString(getId());
+
+            String value = subscribersDAO.getCredentials(botId);
             // create new file (if necessary)
             if (value == null) {
                 keyValueMap = Maps.newHashMap();
                 // save the credentials
-                //Logger.info("Saving credentials for %s", id);
+                Logger.info("Saving credentials for %s", id);
                 save();
             } else {
                 // load credentials
-                //Logger.info("Loading credentials for %s", id);
-                keyValueMap = objectMapper.readValue(value, new TypeReference<HashMap<String, byte[]>>() {
+                Logger.info("Loading credentials for %s", id);
+                keyValueMap = objectMapper.readValue(value, new TypeReference<>() {
                 });
             }
         }
 
-        // todo
-        private String getFromDB(String id) {
-            return null;
-        }
-
-        private void saveToDB(String id, String s) {
-        }
-        // todo
-
         @Override
         public void save() throws IOException {
-            String s = objectMapper.writeValueAsString(keyValueMap);
-            saveToDB(getId(), s);
-        }
-
-        @Override
-        public RedisDataStoreFactory getDataStoreFactory() {
-            return dataStoreFactory;
+            String credentials = objectMapper.writeValueAsString(keyValueMap);
+            UUID botId = UUID.fromString(getId());
+            subscribersDAO.setCredentials(botId, credentials);
         }
     }
 }
