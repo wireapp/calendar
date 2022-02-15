@@ -12,12 +12,16 @@
  * the License.
  */
 
-package com.google.api.client.util.store;
+package com.wire.bots.cali;
 
+import com.DAO.CredentialsDAO;
 import com.DAO.SubscribersDAO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.util.Maps;
+import com.google.api.client.util.store.AbstractDataStoreFactory;
+import com.google.api.client.util.store.AbstractMemoryDataStore;
+import com.google.api.client.util.store.DataStore;
 import com.wire.xenon.tools.Logger;
 import org.jdbi.v3.core.Jdbi;
 
@@ -26,15 +30,15 @@ import java.io.Serializable;
 import java.util.UUID;
 
 public class PostgresDataStoreFactory extends AbstractDataStoreFactory {
-    SubscribersDAO subscribersDAO;
+    CredentialsDAO credentialsDAO;
 
     public PostgresDataStoreFactory(Jdbi jdbi) {
-        subscribersDAO = jdbi.onDemand(SubscribersDAO.class);
+        credentialsDAO = jdbi.onDemand(CredentialsDAO.class);
     }
 
     @Override
     protected <V extends Serializable> DataStore<V> createDataStore(String id) throws IOException {
-        return new PostgresDataStore<>(this, subscribersDAO, id);
+        return new PostgresDataStore<>(this, credentialsDAO, id);
     }
 
     /**
@@ -45,15 +49,13 @@ public class PostgresDataStoreFactory extends AbstractDataStoreFactory {
      */
     private static class PostgresDataStore<V extends Serializable> extends AbstractMemoryDataStore<V> {
         private final ObjectMapper objectMapper = new ObjectMapper();
-        private final SubscribersDAO subscribersDAO;
+        private final CredentialsDAO credentialsDAO;
 
-        PostgresDataStore(PostgresDataStoreFactory dataStore, SubscribersDAO subscribersDAO, String id) throws IOException {
+        PostgresDataStore(PostgresDataStoreFactory dataStore, CredentialsDAO credentialsDAO, String id) throws IOException {
             super(dataStore, id);
-            this.subscribersDAO = subscribersDAO;
+            this.credentialsDAO = credentialsDAO;
 
-            UUID botId = UUID.fromString(getId());
-
-            String value = subscribersDAO.getCredentials(botId);
+            String value = credentialsDAO.getCredentials(id);
             // create new file (if necessary)
             if (value == null) {
                 keyValueMap = Maps.newHashMap();
@@ -71,8 +73,7 @@ public class PostgresDataStoreFactory extends AbstractDataStoreFactory {
         @Override
         public void save() throws IOException {
             String credentials = objectMapper.writeValueAsString(keyValueMap);
-            UUID botId = UUID.fromString(getId());
-            subscribersDAO.setCredentials(botId, credentials);
+            credentialsDAO.setCredentials(getId(), credentials);
         }
     }
 }

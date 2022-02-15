@@ -1,7 +1,6 @@
 package com.wire.bots.cali;
 
 import com.google.api.client.util.store.DataStore;
-import com.google.api.client.util.store.PostgresDataStoreFactory;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
 import org.jdbi.v3.core.Jdbi;
@@ -37,10 +36,9 @@ public class PostgresDataStoreFactoryTest {
         String credentials = "These are some very secret credentials";
         PostgresDataStoreFactory factory = new PostgresDataStoreFactory(jdbi);
 
-        UUID botId = UUID.randomUUID();
-        DataStore<Serializable> dataStore = factory.getDataStore(botId.toString());
+        String id = "dfdsfsd";
+        DataStore<Serializable> dataStore = factory.getDataStore(id);
 
-        String id = dataStore.getId();
         DataStore<Serializable> set = dataStore.set(id, credentials);
 
         Serializable serializable = dataStore.get(id);

@@ -28,10 +28,4 @@ public interface SubscribersDAO {
 
     @SqlQuery("SELECT schedule FROM Subscribers WHERE botId = :botId")
     String getSchedule(@Bind("botId") UUID botId);
-
-    @SqlUpdate("UPDATE Subscribers set credentials = :credentials WHERE botId = :botId")
-    int setCredentials(@Bind("botId") UUID botId, @Bind("credentials") String credentials);
-
-    @SqlQuery("SELECT credentials FROM Subscribers WHERE botId = :botId")
-    String getCredentials(@Bind("botId") UUID botId);
 }
