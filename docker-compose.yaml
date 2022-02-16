@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  cali:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - release_version=docker-compose
+    image: eu.gcr.io/wire-bot/cali
+    ports:
+      # port where Cali has its API
+      - 8080:8080
+    environment:
+      - DB_URL=jdbc:postgresql://db:5432/cali
+      - DB_USER=cali
+      - DB_PASSWORD=cali
+      - SERVICE_TOKEN=b53181dd-6400-4960-8988
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    # just for local development
+    environment:
+      - POSTGRES_USER=cali
+      - POSTGRES_PASSWORD=cali
+      - POSTGRES_DB=cali
+    ports:
+      - 5432:5432
+    volumes:
+      - cali-db:/var/lib/postgresql/data/
+
+volumes:
+  cali-db:

@@ -1,6 +1,5 @@
 target/
 data/
-crypto/
 *.iml
 .idea/
 *.log

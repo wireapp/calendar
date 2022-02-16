@@ -1,0 +1,112 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches:
+      - staging
+
+env:
+  SERVICE_NAME: cali
+
+  # common setup
+  GKE_PROJECT: wire-bot
+  GKE_ZONE: europe-west1-c
+  GCR_REPOSITORY: eu.gcr.io
+  GKE_CLUSTER: dagobah
+
+  NAMESPACE: staging
+
+jobs:
+  publish:
+    name: Deploy to staging
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Environment
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "DOCKER_IMAGE=${{ env.GCR_REPOSITORY }}/${{ env.GKE_PROJECT }}/${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+          echo "DEPLOYMENT=${{ env.SERVICE_NAME }}-app" >> $GITHUB_ENV
+          echo "CONTAINER=${{ env.SERVICE_NAME }}" >> $GITHUB_ENV
+
+      - name: Create tags and labels
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to GCR
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.GCR_REPOSITORY }}
+          username: _json_key
+          password: ${{ secrets.GCR_ACCESS_JSON }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          push: true
+          build-args: |
+            release_version=${{ env.RELEASE_VERSION }}
+
+      - name: Prepare new name of the image
+        run: |
+          echo "NEW_IMAGE=${{ env.DOCKER_IMAGE }}@${{ steps.docker_build.outputs.digest }}" >> $GITHUB_ENV
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_email: kubernetes-deployment-agent@wire-bot.iam.gserviceaccount.com
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: ${{ env.GKE_PROJECT }}
+          export_default_credentials: true
+
+      - name: Configure Docker Google cloud
+        run: |
+          gcloud --quiet auth configure-docker
+
+      - name: Login to K8s
+        run: |
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --zone "${GKE_ZONE}";
+          kubectl config set-context --current --namespace="${NAMESPACE}";
+
+      - name: Deploy the Service
+        run: |
+          kubectl set image deployment "${DEPLOYMENT}" "${CONTAINER}=${NEW_IMAGE}";
+
+      - name: Check that the service started
+        id: deployment_check
+        continue-on-error: true
+        env:
+          TIMEOUT: 5m
+        run: |
+          kubectl rollout status deployment "${DEPLOYMENT}" -w --timeout="${TIMEOUT}";
+
+      - name: Undo Failed Deployment
+        if: steps.deployment_check.outcome == 'failure'
+        run: |
+          kubectl rollout undo deployment "${DEPLOYMENT}"
+
+      - name: Indicate failure if the deployment check failed
+        if: steps.deployment_check.outcome == 'failure'
+        run: |
+          echo "steps.deployment_check failed!"
+          exit 1
+
+      - name: Webhook to Wire
+        uses: 8398a7/action-slack@v2
+        with:
+          status: ${{ job.status }}
+          author_name: ${{ env.SERVICE_NAME }} Staging Deployment
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.WEBHOOK_CI }}
+        if: always()
