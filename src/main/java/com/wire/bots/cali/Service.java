@@ -46,7 +46,6 @@ public class Service extends Server<Config> {
     protected void initialize(Config config, Environment env) {
         CONFIG = config;
         service = this;
-        env.jersey().setUrlPattern("/cali/*");
 
         alertManager = new AlertManager(jdbi);
         commandManager = new CommandManager(jdbi);
