@@ -34,14 +34,13 @@ public class CalendarAPI {
     private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
     private static GoogleAuthorizationCodeFlow flow;
-    private static GoogleClientSecrets clientSecrets;
 
     private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
             Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", Pattern.CASE_INSENSITIVE);
 
     static {
-        try (InputStream in = new FileInputStream(Service.CONFIG.getSecretPath())) {
-            clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+        try (InputStream in = new FileInputStream(Service.CONFIG.secretPath)) {
+            GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
             DataStoreFactory factory = new PostgresDataStoreFactory(Service.service.getJdbi());
@@ -60,28 +59,32 @@ public class CalendarAPI {
 
     static String getAuthUrl(String botId) {
         return flow.newAuthorizationUrl()
-                .setRedirectUri(getRedirect())
+                .setRedirectUri(Service.CONFIG.authRedirect)
                 .setState(botId)
                 .build();
     }
 
-    private static String getRedirect() {
-        return String.format("https://%s/cali/user/auth/google_oauth2/callback", Service.CONFIG.domain);
-    }
-
     public static Credential processAuthCode(String botId, String code) throws IOException {
         GoogleTokenResponse response = flow.newTokenRequest(code)
-                .setRedirectUri(getRedirect())
+                .setRedirectUri(Service.CONFIG.authRedirect)
                 .execute();
 
+        return createAndStoreCredential(botId, response);
+    }
+
+    public static Credential createAndStoreCredential(String botId, GoogleTokenResponse response) throws IOException {
         return flow.createAndStoreCredential(response, botId);
     }
 
     public static Calendar getCalendarService(String botId) throws IOException {
-        Credential credential = flow.loadCredential(botId);
+        Credential credential = loadCredential(botId);
         return new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
+    }
+
+    public static Credential loadCredential(String botId) throws IOException {
+        return flow.loadCredential(botId);
     }
 
     public static PeopleService getPeopleService(String botId) throws IOException {
@@ -139,7 +142,7 @@ public class CalendarAPI {
         channel.setId(botId);
         channel.setKind("api#channel");
         channel.setType("web_hook");
-        channel.setAddress(String.format("https://%s/cali/notifications", Service.CONFIG.domain));
+        channel.setAddress(Service.CONFIG.notificationsUrl);
 
         Calendar.Events.Watch watch = getCalendarService(botId)
                 .events()

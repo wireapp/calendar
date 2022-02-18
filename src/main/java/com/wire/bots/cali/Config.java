@@ -21,32 +21,14 @@ package com.wire.bots.cali;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.wire.lithium.Configuration;
 
+import javax.validation.constraints.NotNull;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Config extends Configuration {
-    public String domain;
+    @NotNull
+    public String authRedirect;
+    @NotNull
     public String secretPath;
-    public String ingress;
-    public int portMin;
-    public int portMax;
-    public String module;
-
-    public String getSecretPath() {
-        return secretPath;
-    }
-
-    public String getIngress() {
-        return ingress;
-    }
-
-    public int getPortMin() {
-        return portMin;
-    }
-
-    public int getPortMax() {
-        return portMax;
-    }
-
-    public String getModule() {
-        return module;
-    }
+    @NotNull
+    public String notificationsUrl;
 }

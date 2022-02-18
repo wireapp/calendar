@@ -1,5 +1,7 @@
 package com.wire.bots.cali;
 
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.util.store.DataStore;
 import io.dropwizard.testing.ConfigOverride;
 import io.dropwizard.testing.DropwizardTestSupport;
@@ -43,5 +45,15 @@ public class PostgresDataStoreFactoryTest {
 
         Serializable serializable = dataStore.get(id);
 
+    }
+
+    @Test
+    public void flowTest() throws IOException {
+        String botId = UUID.randomUUID().toString();
+        String authUrl = CalendarAPI.getAuthUrl(botId);
+
+        Credential andStoreCredential = CalendarAPI.createAndStoreCredential(botId, new GoogleTokenResponse());
+
+        Credential credential = CalendarAPI.loadCredential(botId);
     }
 }

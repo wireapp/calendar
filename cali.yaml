@@ -10,7 +10,6 @@ token: ${SERVICE_TOKEN:-}   # Service's auth token
 
 swagger:
   resourcePackage: com.wire.bots.cali.resources
-  uriPrefix: /cali
   schemes:
     - http
     - https
@@ -21,9 +20,6 @@ database:
   password: ${DB_PASSWORD:-}
   url: ${DB_URL:-jdbc:postgresql://localhost/cali}
 
-module: mixer
-ingress: localhost
-portMin: 32768
-portMax: 32867
-secretPath: client-secret.json
-redirect: 'localhost:8080/cali/user/auth/google_oauth2/callback'
+secretPath: ${GOOGLE_CLIENT_SECRET:-'client-secret.json'}
+authRedirect: ${AUTH_REDIRECT:-'localhost:8080/user/auth/google_oauth2/callback'}
+notificationsUrl: ${NOTIFICATIONS_URL:-'localhost:8080/notifications'}
