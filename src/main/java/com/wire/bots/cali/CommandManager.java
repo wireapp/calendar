@@ -8,7 +8,6 @@ import com.wire.xenon.WireClient;
 import com.wire.xenon.assets.LinkPreview;
 import com.wire.xenon.assets.MessageText;
 import com.wire.xenon.assets.Picture;
-import com.wire.xenon.backend.models.User;
 import com.wire.xenon.models.AssetKey;
 import com.wire.xenon.tools.Logger;
 import org.jdbi.v3.core.Jdbi;
@@ -34,6 +33,7 @@ class CommandManager {
     private static final String COMMAND_UNMUTE = "/unmute";
     private static final String COMMAND_HELP = "/help";
     public static final String REMINDME = "/remindme";
+    public static final String AUTH = "/auth";
 
     private final CallScheduler callScheduler;
 
@@ -49,7 +49,9 @@ class CommandManager {
     void processCommand(WireClient client, UUID sender, String command) throws Exception {
         command = command.toLowerCase().trim();
 
-        if (command.startsWith(COMMAND_LIST)) {
+        if (command.equals(AUTH)) {
+            showAuthLink(client, sender);
+        } else if (command.startsWith(COMMAND_LIST)) {
             String args = command.replace(COMMAND_LIST, "").trim();
             int maxResults = parseInt(args, 5);
             Events events = CalendarAPI.listEvents(client.getId().toString(), maxResults);
@@ -133,11 +135,11 @@ class CommandManager {
         }
     }
 
-    void showAuthLink(WireClient client, User origin) throws Exception {
+    void showAuthLink(WireClient client, UUID sender) throws Exception {
         try {
             String authUrl = CalendarAPI.getAuthUrl(client.getId().toString());
             LinkPreview linkPreview = new LinkPreview(authUrl, "Sign in - Google Accounts", uploadPreview(client));
-            client.send(linkPreview);
+            client.send(linkPreview, sender);
         } catch (Exception e) {
             Logger.error("showAuthLink: bot: %s error: %s", client.getId(), e);
             client.send(new MessageText("Something went wrong :(."));

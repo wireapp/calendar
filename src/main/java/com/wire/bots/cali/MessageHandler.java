@@ -31,12 +31,10 @@ import com.wire.xenon.tools.Logger;
 import java.util.UUID;
 
 public class MessageHandler extends MessageHandlerBase {
-    private final StorageFactory storageF;
     private final AlertManager alertManager;
     private final CommandManager commandManager;
 
-    MessageHandler(AlertManager alertManager, CommandManager commandManager, StorageFactory storageF) {
-        this.storageF = storageF;
+    MessageHandler(AlertManager alertManager, CommandManager commandManager) {
         this.alertManager = alertManager;
         this.commandManager = commandManager;
     }
@@ -62,7 +60,7 @@ public class MessageHandler extends MessageHandlerBase {
         try {
             client.send(new MessageText("Hello!\n" +
                     "Thank you for adding me here. Follow this link to connect me to one of your calendars."));
-            commandManager.showAuthLink(client, getOwner(client));
+            commandManager.showAuthLink(client, message.from);
         } catch (Exception e) {
             Logger.warning("onNewConversation: %s %s", client.getId(), e);
         }
@@ -85,11 +83,5 @@ public class MessageHandler extends MessageHandlerBase {
         } catch (Exception e) {
             Logger.warning("onText: %s %s", client.getId(), e);
         }
-    }
-
-    private User getOwner(WireClient client) throws Exception {
-        final UUID botId = client.getId();
-        NewBot state = storageF.create(botId).getState();
-        return client.getUser(state.origin.id);
     }
 }

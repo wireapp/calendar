@@ -39,7 +39,7 @@ public class Service extends Server<Config> {
 
     @Override
     protected MessageHandlerBase createHandler(Config config, Environment env) {
-        return new MessageHandler(alertManager, commandManager, getStorageFactory());
+        return new MessageHandler(alertManager, commandManager);
     }
 
     @Override
