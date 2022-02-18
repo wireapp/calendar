@@ -1,12 +1,26 @@
 server:
   applicationConnectors:
     - type: http
-      port: 8080
+      port: ${HTTP_PORT:-8080}
+      maxRequestHeaderSize: 16KiB
+
+  gzip:
+    bufferSize: 8KiB
+    enabled: true
 
   requestLog:
-      appenders: []
+    appenders:
+      - type: ${APPENDER_TYPE:-console}
+        filterFactories:
+          - type: status-filter-factory
 
-token: ${SERVICE_TOKEN:-}   # Service's auth token
+logging:
+  level: INFO
+  appenders:
+    - type: ${APPENDER_TYPE:-console}
+  loggers:
+    "org.reflections.Reflections": ERROR
+    "com.wire.bots.logger": ${LOG_LEVEL:-INFO}
 
 swagger:
   resourcePackage: com.wire.bots.cali.resources
@@ -20,6 +34,8 @@ database:
   password: ${DB_PASSWORD:-}
   url: ${DB_URL:-jdbc:postgresql://localhost/cali}
 
+token: ${SERVICE_TOKEN:-}   # Service's auth token
+apiHost: ${WIRE_API_HOST:-https://prod-nginz-https.wire.com}
 secretPath: ${GOOGLE_CLIENT_SECRET:-'client-secret.json'}
 authRedirect: ${AUTH_REDIRECT:-'localhost:8080/user/auth/google_oauth2/callback'}
 notificationsUrl: ${NOTIFICATIONS_URL:-'localhost:8080/notifications'}
