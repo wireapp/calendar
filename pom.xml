@@ -9,9 +9,9 @@
     <version>1.0.0</version>
 
     <properties>
-        <jackson.version>2.13.1</jackson.version>
-        <lithiumm.version>3.3.5</lithiumm.version>
-        <dropwizard.version>2.0.21</dropwizard.version>
+        <jackson.version>2.13.4</jackson.version>
+        <lithium.version>3.4.2</lithium.version>
+        <dropwizard.version>2.1.2</dropwizard.version>
 
         <maven.test.skip>true</maven.test.skip>
         <maven.compiler.target>11</maven.compiler.target>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>com.wire</groupId>
             <artifactId>lithium</artifactId>
-            <version>${lithiumm.version}</version>
+            <version>${lithium.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -34,32 +34,32 @@
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
-            <version>1.33.0</version>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-calendar</artifactId>
-            <version>v3-rev244-1.22.0</version>
+            <version>v3-rev20220715-2.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-people</artifactId>
-            <version>v1-rev537-1.25.0</version>
+            <version>v1-rev20220531-2.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.oauth-client</groupId>
             <artifactId>google-oauth-client-jetty</artifactId>
-            <version>1.33.0</version>
+            <version>1.34.1</version>
         </dependency>
         <dependency>
             <groupId>org.ocpsoft.prettytime</groupId>
             <artifactId>prettytime-nlp</artifactId>
-            <version>4.0.0.Final</version>
+            <version>5.0.4.Final</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.0.1-jre</version>
+            <version>31.1-jre</version>
         </dependency>
     </dependencies>
 

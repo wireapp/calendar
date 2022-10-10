@@ -1,6 +1,7 @@
 package com.wire.bots.cali;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.DataStoreCredentialRefreshListener;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
@@ -24,6 +25,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +35,8 @@ public class CalendarAPI {
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String CALENDAR_ID = "primary";
     private static HttpTransport HTTP_TRANSPORT;
-    private static GoogleAuthorizationCodeFlow flow;
+    private static final DataStoreFactory factory = new PostgresDataStoreFactory(Service.service.getJdbi());
+    private static GoogleAuthorizationCodeFlow.Builder builder;
 
     private static final Pattern VALID_EMAIL_ADDRESS_REGEX =
             Pattern.compile("[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+", Pattern.CASE_INSENSITIVE);
@@ -43,29 +46,32 @@ public class CalendarAPI {
             GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
             HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
-            DataStoreFactory factory = new PostgresDataStoreFactory(Service.service.getJdbi());
-
-            flow = new GoogleAuthorizationCodeFlow.Builder(
+            builder = new GoogleAuthorizationCodeFlow.Builder(
                     HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, CalendarScopes.all())
                     .setDataStoreFactory(factory)
                     .setAccessType("offline")
-                    .setApprovalPrompt("force")
-                    //.addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
-                    .build();
+                    .setApprovalPrompt("force");
         } catch (Exception t) {
             t.printStackTrace();
         }
     }
 
-    static String getAuthUrl(String botId) {
-        return flow.newAuthorizationUrl()
+    private static GoogleAuthorizationCodeFlow flow(String botId) throws IOException {
+        return builder
+                .addRefreshListener(new DataStoreCredentialRefreshListener(botId, factory))
+                .build();
+    }
+
+    static String getAuthUrl(String botId) throws IOException {
+        return flow(botId).newAuthorizationUrl()
                 .setRedirectUri(Service.CONFIG.authRedirect)
                 .setState(botId)
                 .build();
     }
 
     public static Credential processAuthCode(String botId, String code) throws IOException {
-        GoogleTokenResponse response = flow.newTokenRequest(code)
+        GoogleTokenResponse response = flow(botId)
+                .newTokenRequest(code)
                 .setRedirectUri(Service.CONFIG.authRedirect)
                 .execute();
 
@@ -73,7 +79,11 @@ public class CalendarAPI {
     }
 
     public static Credential createAndStoreCredential(String botId, GoogleTokenResponse response) throws IOException {
-        return flow.createAndStoreCredential(response, botId);
+        return flow(botId).createAndStoreCredential(response, botId);
+    }
+
+    public static Credential loadCredential(String botId) throws IOException {
+        return flow(botId).loadCredential(botId);
     }
 
     public static Calendar getCalendarService(String botId) throws IOException {
@@ -83,12 +93,8 @@ public class CalendarAPI {
                 .build();
     }
 
-    public static Credential loadCredential(String botId) throws IOException {
-        return flow.loadCredential(botId);
-    }
-
     public static PeopleService getPeopleService(String botId) throws IOException {
-        Credential credential = flow.loadCredential(botId);
+        Credential credential = loadCredential(botId);
         return new PeopleService.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
