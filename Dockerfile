@@ -13,7 +13,7 @@ COPY src ./src
 RUN mvn package -DskipTests=true
 
 # runtime stage
-FROM wirebot/runtime
+FROM wirebot/runtime:1.2.2
 
 WORKDIR /opt/cali
 
